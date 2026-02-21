@@ -23,7 +23,7 @@ export default async function CraftsmenPage() {
             <p className="text-sm text-gray-500 mb-4">{craftsman.email}</p>
             
             <div className="flex flex-wrap gap-2 justify-center mb-4">
-              {craftsman.skills?.map((skill, index) => (
+              {craftsman.skills?.map((skill: string, index: number) => (
                 <span key={index} className="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-gray-300">
                   {skill}
                 </span>
