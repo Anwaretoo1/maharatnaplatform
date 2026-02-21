@@ -81,7 +81,7 @@ export async function getCourseById(id: string) {
 
 export async function createCourse(courseData: Omit<Course, 'id' | 'createdAt' | 'updatedAt'>) {
   try {
-    const { content, ...data } = courseData;
+    const { content: _content, ...data } = courseData;
     const course = await prisma.course.create({
       data: {
         title: data.title,
@@ -103,7 +103,7 @@ export async function createCourse(courseData: Omit<Course, 'id' | 'createdAt' |
 
 export async function updateCourse(id: string, courseData: Partial<Course>) {
   try {
-    const { content, ...data } = courseData;
+    const { content: _content, ...data } = courseData;
     const course = await prisma.course.update({
       where: { id },
       data,

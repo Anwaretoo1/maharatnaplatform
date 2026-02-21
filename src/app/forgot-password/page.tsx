@@ -29,7 +29,7 @@ export default function ForgotPasswordPage() {
         setStatus('error');
         setMessage(data.error || 'حدث خطأ ما');
       }
-    } catch (error) {
+    } catch (_error) {
       setStatus('error');
       setMessage('حدث خطأ في الاتصال');
     }

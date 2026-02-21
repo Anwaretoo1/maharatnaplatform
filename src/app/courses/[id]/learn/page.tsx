@@ -40,7 +40,7 @@ export default async function CourseLearnPage({ params }: { params: Promise<{ id
     }
   });
 
-  const completedContentIds = new Set(progress.filter(p => p.isCompleted).map(p => p.courseContentId));
+  // Progress is passed to VideoPlayer component
 
   return (
     <div className="flex flex-col lg:flex-row h-screen bg-gray-100 dark:bg-neutral-950">

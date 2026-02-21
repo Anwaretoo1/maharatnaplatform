@@ -2,7 +2,6 @@
 
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 
 function ResetPasswordForm() {
   const [password, setPassword] = useState('');
@@ -56,7 +55,7 @@ function ResetPasswordForm() {
         setStatus('error');
         setMessage(data.error || 'حدث خطأ ما');
       }
-    } catch (error) {
+    } catch (_error) {
       setStatus('error');
       setMessage('حدث خطأ في الاتصال');
     }

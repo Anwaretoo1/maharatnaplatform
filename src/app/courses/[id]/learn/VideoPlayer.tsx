@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 
-export default function VideoPlayer({ course, initialProgress, userId }: { course: any, initialProgress: any[], userId: string }) {
+export default function VideoPlayer({ course, initialProgress }: { course: any, initialProgress: any[], userId?: string }) {
   const [activeContent, setActiveContent] = useState(course.content[0]);
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set(initialProgress.filter(p => p.isCompleted).map(p => p.courseContentId)));
 
