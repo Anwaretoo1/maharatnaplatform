@@ -2,7 +2,8 @@ import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { DeleteUserButton, ChangeRoleButton, ResetPasswordButton, DeleteCourseAdminButton } from './AdminActions';
+import { DeleteUserButton, ChangeRoleButton, ResetPasswordButton, DeleteCourseAdminButton, SendMessageButton } from './AdminActions';
+import OnlineUsersCard from './OnlineUsersCard';
 
 export default async function AdminDashboard() {
   const session = await getSession();
@@ -12,7 +13,9 @@ export default async function AdminDashboard() {
     redirect('/dashboard/learner');
   }
 
-  const [userCount, courseCount, enrollmentCount, donationSum, allUsers, allCourses, recentDonations] = await Promise.all([
+  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+  
+  const [userCount, courseCount, enrollmentCount, donationSum, allUsers, allCourses, recentDonations, onlineCount] = await Promise.all([
     prisma.user.count(),
     prisma.course.count(),
     prisma.enrollment.count(),
@@ -28,7 +31,8 @@ export default async function AdminDashboard() {
     prisma.donation.findMany({
       take: 10,
       orderBy: { createdAt: 'desc' }
-    })
+    }),
+    prisma.user.count({ where: { lastSeen: { gte: fiveMinutesAgo } } }),
   ]);
 
   const craftsmanCount = await prisma.user.count({ where: { role: 'craftsman' } });
@@ -39,7 +43,8 @@ export default async function AdminDashboard() {
       <h1 className="text-3xl font-bold mb-8">لوحة المسؤول</h1>
       
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        <OnlineUsersCard initialCount={onlineCount} />
         <div className="bg-white dark:bg-neutral-900 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-neutral-800">
           <div className="flex items-center justify-between">
             <div>
@@ -122,6 +127,7 @@ export default async function AdminDashboard() {
                   <td className="py-3 px-2">
                     {u.role !== 'admin' ? (
                       <div className="flex items-center gap-3">
+                        <SendMessageButton userId={u.id} userName={u.name} />
                         <ResetPasswordButton userId={u.id} userName={u.name} />
                         <ChangeRoleButton userId={u.id} currentRole={u.role} />
                         <DeleteUserButton userId={u.id} userName={u.name} />

@@ -23,6 +23,8 @@ export async function DELETE(request: NextRequest) {
 
     // حذف كل البيانات المرتبطة بالمستخدم
     await prisma.$transaction([
+      prisma.notification.deleteMany({ where: { userId } }),
+      prisma.message.deleteMany({ where: { OR: [{ senderId: userId }, { receiverId: userId }] } }),
       prisma.progress.deleteMany({ where: { userId } }),
       prisma.enrollment.deleteMany({ where: { userId } }),
       prisma.courseContent.deleteMany({ where: { course: { creatorId: userId } } }),
@@ -74,6 +76,27 @@ export async function PATCH(request: NextRequest) {
         where: { id: userId },
         data: { password: hashedPassword, resetToken: null, resetTokenExpiry: null },
       });
+
+      // Send notification to user about password change
+      await prisma.notification.create({
+        data: {
+          userId,
+          title: 'تم تغيير كلمة المرور',
+          message: `تم تغيير كلمة المرور الخاصة بك بواسطة المسؤول. كلمة المرور الجديدة: ${password}`,
+          type: 'password_changed',
+        },
+      });
+
+      // Send private message with the new password
+      await prisma.message.create({
+        data: {
+          senderId: session.user.id,
+          receiverId: userId,
+          subject: 'تم تغيير كلمة المرور',
+          content: `مرحباً،\n\nتم تغيير كلمة المرور الخاصة بحسابك بواسطة المسؤول.\n\nكلمة المرور الجديدة: ${password}\n\nيرجى تغيير كلمة المرور بعد تسجيل الدخول من لوحة التحكم.\n\nمع التحية،\nإدارة منصة مهاراتنا`,
+        },
+      });
+
       return NextResponse.json({ message: `تم إعادة تعيين كلمة المرور إلى: ${password}` });
     }
 

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import FileUpload from '@/app/components/FileUpload';
 
 export default function CreateCoursePage() {
   const router = useRouter();
@@ -74,10 +75,21 @@ export default function CreateCoursePage() {
             onChange={e => setFormData({...formData, category: e.target.value})}
           >
             <option value="">اختر تصنيفاً</option>
+            <option value="woodwork">نجارة وحفر على الخشب</option>
+            <option value="mosaic">فسيفساء</option>
+            <option value="textile">نسيج وتطريز</option>
+            <option value="pottery">فخار وخزف</option>
+            <option value="metalwork">أعمال معدنية ونحاسيات</option>
+            <option value="glass">زجاج يدوي</option>
+            <option value="leather">جلديات</option>
+            <option value="soap">صناعة الصابون</option>
+            <option value="food">طبخ وحلويات تقليدية</option>
+            <option value="calligraphy">خط عربي وزخرفة</option>
+            <option value="jewelry">مجوهرات يدوية</option>
             <option value="programming">برمجة</option>
             <option value="design">تصميم</option>
-            <option value="crafts">حرف يدوية</option>
             <option value="business">أعمال</option>
+            <option value="other">أخرى</option>
           </select>
         </div>
 
@@ -109,15 +121,24 @@ export default function CreateCoursePage() {
         )}
 
         <div>
-          <label className="block text-sm font-medium mb-1">رابط الصورة المصغرة (اختياري)</label>
-          <input
-            type="url"
-            className="w-full px-3 py-2 border rounded-md dark:bg-neutral-800 dark:border-neutral-700"
-            placeholder="https://drive.google.com/file/d/.../view أو رابط صورة مباشر"
-            value={formData.thumbnailUrl}
-            onChange={e => setFormData({...formData, thumbnailUrl: e.target.value})}
+          <label className="block text-sm font-medium mb-2">الصورة المصغرة (اختياري)</label>
+          <FileUpload
+            accept="image/*"
+            label=""
+            maxSizeMB={10}
+            onUploadComplete={(url) => setFormData({...formData, thumbnailUrl: url})}
+            currentUrl={formData.thumbnailUrl || undefined}
           />
-          <p className="text-xs text-gray-500 mt-1">💡 يمكنك رفع الصورة على Google Drive ومشاركتها بشكل عام ثم لصق الرابط هنا</p>
+          <div className="mt-2">
+            <p className="text-xs text-gray-500 mb-1">أو أدخل رابطاً مباشراً:</p>
+            <input
+              type="url"
+              className="w-full px-3 py-2 border rounded-md dark:bg-neutral-800 dark:border-neutral-700 text-sm"
+              placeholder="https://drive.google.com/file/d/.../view أو رابط صورة مباشر"
+              value={formData.thumbnailUrl}
+              onChange={e => setFormData({...formData, thumbnailUrl: e.target.value})}
+            />
+          </div>
         </div>
 
         <button

@@ -2,12 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import cloudinary from '@/lib/cloudinary';
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
 // الحد الأقصى لحجم الملفات
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB

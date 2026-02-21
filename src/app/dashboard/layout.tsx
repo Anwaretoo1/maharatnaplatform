@@ -25,20 +25,28 @@ export default async function DashboardLayout({
         </div>
         <nav className="mt-6 px-4 space-y-2">
           <Link href="/dashboard/learner" className="block px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-700 dark:text-gray-300">
-            لوحة المتعلم
+            📚 لوحة المتعلم
           </Link>
           
           {(user.role === 'craftsman' || user.role === 'admin') && (
             <Link href="/dashboard/craftsman" className="block px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-700 dark:text-gray-300">
-              لوحة الحرفي
+              🎨 لوحة الحرفي
             </Link>
           )}
           
           {user.role === 'admin' && (
             <Link href="/dashboard/admin" className="block px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-700 dark:text-gray-300">
-              لوحة المسؤول
+              ⚙️ لوحة المسؤول
             </Link>
           )}
+
+          <Link href="/dashboard/messages" className="block px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-700 dark:text-gray-300">
+            ✉️ الرسائل
+          </Link>
+
+          <Link href="/dashboard/settings" className="block px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-700 dark:text-gray-300">
+            🔒 تغيير كلمة المرور
+          </Link>
 
           <div className="pt-4 mt-4 border-t border-gray-200 dark:border-neutral-800">
             <Link href="/" className="block px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-700 dark:text-gray-300">

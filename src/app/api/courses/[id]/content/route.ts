@@ -37,6 +37,24 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       }
     });
 
+    // Notify enrolled students about new lesson
+    const enrolledUsers = await prisma.enrollment.findMany({
+      where: { courseId },
+      select: { userId: true },
+    });
+
+    if (enrolledUsers.length > 0) {
+      await prisma.notification.createMany({
+        data: enrolledUsers.map((e) => ({
+          userId: e.userId,
+          title: 'درس جديد',
+          message: `تم إضافة درس جديد "${data.title}" في دورة "${course.title}"`,
+          type: 'new_lesson',
+          link: `/courses/${courseId}/learn`,
+        })),
+      });
+    }
+
     return NextResponse.json(newContent, { status: 201 });
   } catch (error) {
     console.error('Error adding content:', error);

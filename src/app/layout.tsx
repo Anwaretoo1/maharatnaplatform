@@ -1,14 +1,34 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
+import OnlineTracker from "./components/OnlineTracker";
+import NotificationBell from "./components/NotificationBell";
+import PWAInstallPrompt from "./components/PWAInstallPrompt";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "منصة مهاراتنا - تحويل المهارات التقليدية إلى محتوى رقمي",
   description: "منصة لتحويل المهارات التقليدية السورية إلى محتوى رقمي وتعليمي",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "مهاراتنا",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: "#2563eb",
 };
 
 export default async function RootLayout({
@@ -21,6 +41,11 @@ export default async function RootLayout({
 
   return (
     <html lang="ar" dir="rtl">
+      <head>
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+      </head>
       <body className={inter.className}>
         <nav className="bg-white border-b border-gray-200 dark:bg-neutral-900 dark:border-neutral-800 sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -44,6 +69,7 @@ export default async function RootLayout({
               <div className="flex items-center gap-3">
                 {user ? (
                   <>
+                    <NotificationBell />
                     <Link href="/dashboard/learner" className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white text-sm font-medium">
                       لوحة التحكم
                     </Link>
@@ -73,6 +99,8 @@ export default async function RootLayout({
             </div>
           </div>
         </nav>
+        {user && <OnlineTracker />}
+        <PWAInstallPrompt />
         {children}
         <footer className="bg-gray-50 dark:bg-neutral-900 border-t border-gray-200 dark:border-neutral-800 mt-auto">
           <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">

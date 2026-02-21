@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllCourses, getCourseById, createCourse, deleteCourse } from '@/lib/courses';
 import { getSession } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(request: NextRequest) {
   try {
@@ -75,6 +76,24 @@ export async function POST(request: NextRequest) {
       isFree: data.isFree || false,
       price: data.price || 0,
     });
+
+    // Send notification to all users about the new course
+    const allUsers = await prisma.user.findMany({
+      where: { id: { not: session.user.id } },
+      select: { id: true },
+    });
+
+    if (allUsers.length > 0) {
+      await prisma.notification.createMany({
+        data: allUsers.map((u) => ({
+          userId: u.id,
+          title: 'دورة جديدة',
+          message: `تم إضافة دورة جديدة: "${data.title}" بواسطة ${session.user.name}`,
+          type: 'new_course',
+          link: `/courses/${newCourse.id}`,
+        })),
+      });
+    }
     
     return NextResponse.json(newCourse, { status: 201 });
   } catch (error) {

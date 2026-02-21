@@ -2,6 +2,25 @@ import Link from 'next/link';
 import { getAllCourses } from '@/lib/courses';
 import { getDriveImageUrl } from '@/lib/driveUtils';
 
+const categoryLabels: Record<string, string> = {
+  woodwork: 'نجارة وحفر على الخشب',
+  mosaic: 'فسيفساء',
+  textile: 'نسيج وتطريز',
+  pottery: 'فخار وخزف',
+  metalwork: 'أعمال معدنية',
+  glass: 'زجاج يدوي',
+  leather: 'جلديات',
+  soap: 'صناعة الصابون',
+  food: 'طبخ وحلويات تقليدية',
+  calligraphy: 'خط عربي وزخرفة',
+  jewelry: 'مجوهرات يدوية',
+  programming: 'برمجة',
+  design: 'تصميم',
+  crafts: 'حرف يدوية',
+  business: 'أعمال',
+  other: 'أخرى',
+};
+
 export default async function CoursesPage() {
   const courses = await getAllCourses();
 
@@ -24,7 +43,7 @@ export default async function CoursesPage() {
             <div className="p-6">
               <div className="flex justify-between items-start mb-4">
                 <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                  {course.category}
+                  {categoryLabels[course.category] || course.category}
                 </span>
                 <span className={`text-sm font-bold ${course.isFree ? 'text-green-600' : 'text-amber-600'}`}>
                   {course.isFree ? 'مجاني' : `${course.price} ر.س`}
