@@ -1,8 +1,11 @@
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
+import { getSession } from '@/lib/auth';
+import DonateButton from '@/app/donations/DonateButton';
 
 export default async function CraftsmanProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const session = await getSession();
 
   const craftsman = await prisma.user.findUnique({
     where: { id },
@@ -14,6 +17,7 @@ export default async function CraftsmanProfilePage({ params }: { params: Promise
       bio: true,
       skills: true,
       avatar: true,
+      profileImage: true,
       createdAt: true,
       courses: {
         include: {
@@ -43,7 +47,7 @@ export default async function CraftsmanProfilePage({ params }: { params: Promise
         <div className="max-w-4xl mx-auto px-4 flex flex-col md:flex-row items-center gap-8">
           <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white/30 flex-shrink-0">
             <img
-              src={craftsman.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(craftsman.name)}&size=128&background=random`}
+              src={craftsman.profileImage || craftsman.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(craftsman.name)}&size=128&background=random`}
               alt={craftsman.name}
               className="w-full h-full object-cover"
             />
@@ -121,14 +125,18 @@ export default async function CraftsmanProfilePage({ params }: { params: Promise
         <div className="mt-12 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 p-8 rounded-2xl border border-green-200 dark:border-green-800">
           <h2 className="text-xl font-bold mb-3">ادعم هذا الحرفي</h2>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            يمكنك دعم {craftsman.name} من خلال التواصل مع إدارة المنصة عبر البريد الإلكتروني لتنسيق عملية التبرع.
+            يمكنك دعم {craftsman.name} من خلال التواصل مع إدارة المنصة لتنسيق عملية التبرع وإيصالها للحرفي.
           </p>
-          <a
-            href={`mailto:info@maharat-syria.com?subject=تبرع للحرفي ${craftsman.name}&body=أرغب في دعم الحرفي ${craftsman.name}`}
-            className="inline-block bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-full transition-colors"
-          >
-            تواصل للتبرع
-          </a>
+          {session ? (
+            <DonateButton type="craftsman" craftsmanName={craftsman.name} />
+          ) : (
+            <Link
+              href="/login?redirect=/donations"
+              className="inline-block bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-full transition-colors"
+            >
+              سجل دخول للتبرع
+            </Link>
+          )}
         </div>
       </div>
     </main>

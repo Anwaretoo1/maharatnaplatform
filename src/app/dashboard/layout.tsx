@@ -36,6 +36,9 @@ export default async function DashboardLayout({
           <Link href="/dashboard/messages" className="flex-shrink-0 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-300 text-xs font-medium">
             ✉️ الرسائل
           </Link>
+          <Link href="/dashboard/profile" className="flex-shrink-0 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-300 text-xs font-medium">
+            👤 الملف الشخصي
+          </Link>
           <Link href="/dashboard/settings" className="flex-shrink-0 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-300 text-xs font-medium">
             🔒 كلمة المرور
           </Link>
@@ -67,6 +70,10 @@ export default async function DashboardLayout({
 
           <Link href="/dashboard/messages" className="block px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-700 dark:text-gray-300">
             ✉️ الرسائل
+          </Link>
+
+          <Link href="/dashboard/profile" className="block px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-700 dark:text-gray-300">
+            👤 الملف الشخصي
           </Link>
 
           <Link href="/dashboard/settings" className="block px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-700 dark:text-gray-300">

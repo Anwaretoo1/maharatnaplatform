@@ -19,6 +19,7 @@ model User {
   bio       String?  @db.Text
   skills    String?  // Stored as JSON string or comma-separated
   avatar    String?
+  profileImage String? // Profile photo URL
   lastSeen  DateTime? // Track online status
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -33,6 +34,7 @@ model User {
   blockedUsers     BlockedUser[] @relation("Blocker")
   blockedBy        BlockedUser[] @relation("Blocked")
   usedCodes        EnrollmentCode[]
+  discounts        Discount[]
 
   resetToken       String?  @unique
   resetTokenExpiry DateTime?
@@ -54,6 +56,22 @@ model Course {
   content      CourseContent[]
   enrollments  Enrollment[]
   enrollmentCodes EnrollmentCode[]
+  discounts    Discount[]
+}
+
+model Discount {
+  id           String   @id @default(uuid())
+  courseId      String?  // null = global discount (all paid courses)
+  percentage   Float    // e.g. 20 for 20%
+  description  String?  @db.Text
+  isActive     Boolean  @default(true)
+  startDate    DateTime @default(now())
+  endDate      DateTime
+  createdById  String
+  createdAt    DateTime @default(now())
+
+  course       Course?  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdBy    User     @relation(fields: [createdById], references: [id])
 }
 
 model CourseContent {

@@ -38,6 +38,8 @@ export default function MessagesPage() {
   const [sending, setSending] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [currentUserRole, setCurrentUserRole] = useState('');
+  const [broadcastTarget, setBroadcastTarget] = useState<'' | 'all' | 'learners' | 'craftsmen'>('');
 
   const fetchMessages = async () => {
     const res = await fetch(`/api/messages?type=${tab}`);
@@ -63,9 +65,21 @@ export default function MessagesPage() {
     }
   };
 
+  const fetchUserRole = async () => {
+    const res = await fetch('/api/profile');
+    if (res.ok) {
+      const data = await res.json();
+      setCurrentUserRole(data.user?.role || '');
+    }
+  };
+
   useEffect(() => {
     fetchMessages();
   }, [tab]);
+
+  useEffect(() => {
+    fetchUserRole();
+  }, []);
 
   useEffect(() => {
     if (showCompose) fetchContacts();
@@ -100,25 +114,37 @@ export default function MessagesPage() {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!compose.receiverId || !compose.content) return;
+    if (!compose.content) return;
+    // For broadcast, no receiverId needed
+    if (!broadcastTarget && !compose.receiverId) return;
     setSending(true);
     try {
+      const payload: any = {
+        subject: compose.subject,
+        content: compose.content,
+        imageUrl: compose.imageUrl || null,
+      };
+      if (broadcastTarget) {
+        payload.broadcast = broadcastTarget;
+      } else {
+        payload.receiverId = compose.receiverId;
+      }
       const res = await fetch('/api/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          receiverId: compose.receiverId,
-          subject: compose.subject,
-          content: compose.content,
-          imageUrl: compose.imageUrl || null,
-        }),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
+        const data = await res.json();
         setShowCompose(false);
         setCompose({ receiverId: '', subject: '', content: '', imageUrl: '' });
         setImageFile(null);
+        setBroadcastTarget('');
         setTab('sent');
         fetchMessages();
+        if (data.count) {
+          alert(`تم إرسال الرسالة إلى ${data.count} مستخدم`);
+        }
       } else {
         const data = await res.json();
         alert(data.error || 'فشل إرسال الرسالة');
@@ -163,9 +189,12 @@ export default function MessagesPage() {
     }
   };
 
-  // Check if selected receiver is admin
+  // Check if selected receiver is admin or if sender is admin
   const selectedReceiver = contacts.find(c => c.id === compose.receiverId);
   const isAdminReceiver = selectedReceiver?.role === 'admin';
+  const isAdmin = currentUserRole === 'admin';
+  // Admin can always send images, others only when messaging admin
+  const canSendImage = isAdmin || isAdminReceiver;
 
   const getRoleBadge = (role: string) => {
     switch (role) {
@@ -235,28 +264,62 @@ export default function MessagesPage() {
           <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-xl border border-gray-200 dark:border-neutral-700 w-full max-w-lg">
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-neutral-700">
               <h2 className="font-bold text-lg">رسالة جديدة</h2>
-              <button onClick={() => { setShowCompose(false); setCompose({ receiverId: '', subject: '', content: '', imageUrl: '' }); setImageFile(null); }} className="text-gray-500 hover:text-gray-700 text-xl">&times;</button>
+              <button onClick={() => { setShowCompose(false); setCompose({ receiverId: '', subject: '', content: '', imageUrl: '' }); setImageFile(null); setBroadcastTarget(''); }} className="text-gray-500 hover:text-gray-700 text-xl">&times;</button>
             </div>
             <form onSubmit={handleSend} className="p-4 space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">إلى</label>
-                <select
-                  required
-                  className="w-full px-3 py-2 border rounded-md dark:bg-neutral-800 dark:border-neutral-700"
-                  value={compose.receiverId}
-                  onChange={(e) => setCompose({ ...compose, receiverId: e.target.value })}
-                >
-                  <option value="">اختر المستلم</option>
-                  {contacts.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.name} ({u.email}) - {u.role === 'admin' ? 'مسؤول' : u.role === 'craftsman' ? 'حرفي' : 'متعلم'}
-                    </option>
-                  ))}
-                </select>
-                {contacts.length === 0 && (
-                  <p className="text-xs text-amber-600 mt-1">لا يوجد جهات اتصال متاحة. سجّل في دورة لتتمكن من مراسلة معلمها.</p>
-                )}
-              </div>
+              {/* Broadcast options for admin */}
+              {isAdmin && (
+                <div>
+                  <label className="block text-sm font-medium mb-1">نوع الإرسال</label>
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" onClick={() => { setBroadcastTarget(''); }}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${!broadcastTarget ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-300'}`}>
+                      👤 فردي
+                    </button>
+                    <button type="button" onClick={() => { setBroadcastTarget('all'); setCompose(prev => ({ ...prev, receiverId: '' })); }}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${broadcastTarget === 'all' ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-300'}`}>
+                      📢 الكل
+                    </button>
+                    <button type="button" onClick={() => { setBroadcastTarget('learners'); setCompose(prev => ({ ...prev, receiverId: '' })); }}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${broadcastTarget === 'learners' ? 'bg-blue-500 text-white' : 'bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-300'}`}>
+                      🎓 جميع الطلاب
+                    </button>
+                    <button type="button" onClick={() => { setBroadcastTarget('craftsmen'); setCompose(prev => ({ ...prev, receiverId: '' })); }}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${broadcastTarget === 'craftsmen' ? 'bg-green-500 text-white' : 'bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-300'}`}>
+                      🎨 جميع المعلمين
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Recipient selector (only for individual messages) */}
+              {!broadcastTarget && (
+                <div>
+                  <label className="block text-sm font-medium mb-1">إلى</label>
+                  <select
+                    required={!broadcastTarget}
+                    className="w-full px-3 py-2 border rounded-md dark:bg-neutral-800 dark:border-neutral-700"
+                    value={compose.receiverId}
+                    onChange={(e) => setCompose({ ...compose, receiverId: e.target.value })}
+                  >
+                    <option value="">اختر المستلم</option>
+                    {contacts.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.name} ({u.email}) - {u.role === 'admin' ? 'مسؤول' : u.role === 'craftsman' ? 'حرفي' : 'متعلم'}
+                      </option>
+                    ))}
+                  </select>
+                  {contacts.length === 0 && (
+                    <p className="text-xs text-amber-600 mt-1">لا يوجد جهات اتصال متاحة. سجّل في دورة لتتمكن من مراسلة معلمها.</p>
+                  )}
+                </div>
+              )}
+
+              {broadcastTarget && (
+                <div className="bg-purple-50 dark:bg-purple-900/20 rounded-md p-3 text-sm text-purple-700 dark:text-purple-300">
+                  📢 سيتم إرسال الرسالة إلى {broadcastTarget === 'all' ? 'جميع المستخدمين' : broadcastTarget === 'learners' ? 'جميع الطلاب' : 'جميع المعلمين'}
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium mb-1">الموضوع (اختياري)</label>
                 <input
@@ -277,8 +340,8 @@ export default function MessagesPage() {
                 />
               </div>
 
-              {/* Image attachment - available when messaging admin */}
-              {isAdminReceiver && (
+              {/* Image attachment - available when messaging admin OR when admin sends */}
+              {canSendImage && (
                 <div>
                   <label className="block text-sm font-medium mb-1">📎 إرفاق صورة (إيصال دفع، لقطة شاشة...)</label>
                   {compose.imageUrl ? (

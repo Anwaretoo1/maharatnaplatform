@@ -33,6 +33,27 @@ export default async function CourseDetailsPage({ params }: { params: Promise<{ 
     isEnrolled = !!enrollment;
   }
 
+  // Get active discounts for this course
+  const now = new Date();
+  const activeDiscounts = await prisma.discount.findMany({
+    where: {
+      isActive: true,
+      startDate: { lte: now },
+      endDate: { gte: now },
+      OR: [
+        { courseId: id },
+        { courseId: null }, // Global discounts
+      ],
+    },
+    orderBy: { percentage: 'desc' },
+    take: 1, // Best discount
+  });
+
+  const bestDiscount = activeDiscounts[0] || null;
+  const discountedPrice = bestDiscount && course.price
+    ? Math.round(course.price * (1 - bestDiscount.percentage / 100) * 100) / 100
+    : null;
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-neutral-950 pb-12">
       {/* Hero Section */}
@@ -84,8 +105,23 @@ export default async function CourseDetailsPage({ params }: { params: Promise<{ 
                 <img src={course.thumbnailUrl} alt={course.title} className="w-full rounded-md mb-6" />
               )}
               
-              <div className="text-3xl font-bold mb-6 text-center">
-                {course.isFree ? 'مجاني' : `$${course.price}`}
+              <div className="mb-6 text-center">
+                {course.isFree ? (
+                  <span className="text-3xl font-bold text-green-600">مجاني</span>
+                ) : bestDiscount ? (
+                  <div>
+                    <div className="flex items-center justify-center gap-2">
+                      <span className="text-3xl font-bold text-green-600">${discountedPrice}</span>
+                      <span className="text-lg text-gray-400 line-through">${course.price}</span>
+                    </div>
+                    <div className="mt-1 inline-block bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 px-3 py-1 rounded-full text-xs font-bold">
+                      🏷️ خصم {bestDiscount.percentage}% {bestDiscount.description ? `- ${bestDiscount.description}` : ''}
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">ينتهي {new Date(bestDiscount.endDate).toLocaleDateString('ar-SA')}</p>
+                  </div>
+                ) : (
+                  <span className="text-3xl font-bold">${course.price}</span>
+                )}
               </div>
 
               {isEnrolled ? (

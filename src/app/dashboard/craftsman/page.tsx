@@ -2,6 +2,7 @@ import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { DiscountManager } from '@/app/dashboard/admin/AdminActions';
 
 export default async function CraftsmanDashboard() {
   const session = await getSession();
@@ -22,11 +23,14 @@ export default async function CraftsmanDashboard() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">لوحة الحرفي</h1>
-        <Link href="/dashboard/craftsman/courses/new" className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition-colors">
-          + إنشاء دورة جديدة
-        </Link>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold">لوحة الحرفي</h1>
+        <div className="flex flex-wrap gap-2">
+          <DiscountManager courses={myCourses.map(c => ({ id: c.id, title: c.title, isFree: c.isFree, price: c.price }))} role="craftsman" />
+          <Link href="/dashboard/craftsman/courses/new" className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition-colors text-sm">
+            + إنشاء دورة جديدة
+          </Link>
+        </div>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

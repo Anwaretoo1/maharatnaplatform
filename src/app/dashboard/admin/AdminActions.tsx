@@ -420,3 +420,240 @@ export function GenerateCodeButton({ courses }: { courses: { id: string; title: 
     </>
   );
 }
+
+// ========== Discount Manager ==========
+export function DiscountManager({ courses, role }: { courses: { id: string; title: string; isFree: boolean; price: number | null }[]; role: 'admin' | 'craftsman' }) {
+  const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [discounts, setDiscounts] = useState<{
+    id: string; percentage: number; description: string | null; isActive: boolean;
+    startDate: string; endDate: string;
+    course: { id: string; title: string; price: number | null } | null;
+    createdBy: { id: string; name: string; role: string };
+  }[]>([]);
+  const [loadingList, setLoadingList] = useState(false);
+
+  // Form state
+  const [selectedCourse, setSelectedCourse] = useState('');
+  const [isGlobal, setIsGlobal] = useState(false);
+  const [percentage, setPercentage] = useState(10);
+  const [description, setDescription] = useState('');
+  const [endDate, setEndDate] = useState('');
+
+  const paidCourses = courses.filter(c => !c.isFree);
+
+  const fetchDiscounts = async () => {
+    setLoadingList(true);
+    const res = await fetch('/api/discounts?active=false');
+    if (res.ok) {
+      const data = await res.json();
+      setDiscounts(data.discounts || []);
+    }
+    setLoadingList(false);
+  };
+
+  const handleCreate = async () => {
+    if (!isGlobal && !selectedCourse) {
+      alert('اختر دورة أو فعّل الخصم العام');
+      return;
+    }
+    if (!endDate) {
+      alert('حدد تاريخ انتهاء الخصم');
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch('/api/discounts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          courseId: isGlobal ? null : selectedCourse,
+          percentage,
+          description: description || null,
+          endDate,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(data.message || 'تم إنشاء الخصم بنجاح');
+        setSelectedCourse('');
+        setDescription('');
+        setEndDate('');
+        fetchDiscounts();
+      } else {
+        alert(data.error || 'فشل إنشاء الخصم');
+      }
+    } catch {
+      alert('حدث خطأ');
+    }
+    setLoading(false);
+  };
+
+  const handleDeactivate = async (discountId: string) => {
+    if (!confirm('هل أنت متأكد من إلغاء هذا الخصم؟')) return;
+    try {
+      const res = await fetch('/api/discounts', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ discountId }),
+      });
+      if (res.ok) {
+        fetchDiscounts();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'فشل');
+      }
+    } catch {
+      alert('حدث خطأ');
+    }
+  };
+
+  return (
+    <>
+      <button
+        onClick={() => { setShowModal(true); fetchDiscounts(); }}
+        className="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-md transition-colors text-sm"
+      >
+        🏷️ إدارة الخصومات
+      </button>
+
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowModal(false)}>
+          <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-xl border border-gray-200 dark:border-neutral-700 w-full max-w-2xl max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-neutral-700 sticky top-0 bg-white dark:bg-neutral-900 z-10">
+              <h2 className="font-bold text-lg">🏷️ إدارة الخصومات</h2>
+              <button onClick={() => setShowModal(false)} className="text-gray-500 hover:text-gray-700 text-xl">&times;</button>
+            </div>
+
+            <div className="p-4 space-y-6">
+              {/* Create new discount */}
+              <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4 space-y-3">
+                <h3 className="font-bold text-sm text-amber-800 dark:text-amber-300">إنشاء خصم جديد</h3>
+                
+                {role === 'admin' && (
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={isGlobal}
+                      onChange={(e) => { setIsGlobal(e.target.checked); if (e.target.checked) setSelectedCourse(''); }}
+                      className="rounded"
+                    />
+                    <span>خصم عام (على جميع الدورات المدفوعة)</span>
+                  </label>
+                )}
+
+                {!isGlobal && (
+                  <div>
+                    <label className="block text-xs font-medium mb-1">الدورة</label>
+                    <select
+                      className="w-full px-3 py-2 border rounded-md text-sm dark:bg-neutral-800 dark:border-neutral-700"
+                      value={selectedCourse}
+                      onChange={(e) => setSelectedCourse(e.target.value)}
+                    >
+                      <option value="">اختر الدورة المدفوعة</option>
+                      {paidCourses.map(c => (
+                        <option key={c.id} value={c.id}>{c.title} (${c.price})</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium mb-1">نسبة الخصم %</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={100}
+                      className="w-full px-3 py-2 border rounded-md text-sm dark:bg-neutral-800 dark:border-neutral-700"
+                      value={percentage}
+                      onChange={(e) => setPercentage(parseInt(e.target.value) || 1)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium mb-1">ينتهي في</label>
+                    <input
+                      type="date"
+                      className="w-full px-3 py-2 border rounded-md text-sm dark:bg-neutral-800 dark:border-neutral-700"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium mb-1">وصف (اختياري)</label>
+                  <input
+                    type="text"
+                    placeholder="مثال: خصم رمضان"
+                    className="w-full px-3 py-2 border rounded-md text-sm dark:bg-neutral-800 dark:border-neutral-700"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                  />
+                </div>
+
+                <button
+                  onClick={handleCreate}
+                  disabled={loading}
+                  className="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-md disabled:opacity-50 text-sm"
+                >
+                  {loading ? 'جاري الإنشاء...' : `إنشاء خصم ${percentage}%`}
+                </button>
+              </div>
+
+              {/* Existing discounts list */}
+              <div>
+                <h3 className="font-bold text-sm mb-3">الخصومات ({discounts.length})</h3>
+                {loadingList ? (
+                  <p className="text-gray-500 text-sm text-center py-4">جاري التحميل...</p>
+                ) : discounts.length > 0 ? (
+                  <div className="space-y-2">
+                    {discounts.map(d => {
+                      const isExpired = new Date(d.endDate) < new Date();
+                      const isRunning = d.isActive && !isExpired;
+                      return (
+                        <div key={d.id} className={`p-3 rounded-lg border ${isRunning ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800' : 'bg-gray-50 dark:bg-neutral-800 border-gray-200 dark:border-neutral-700'}`}>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span className="font-bold text-sm">{d.percentage}% خصم</span>
+                              <span className="text-xs text-gray-500 mr-2">
+                                {d.course ? d.course.title : '🌍 عام'}
+                              </span>
+                              {d.description && <span className="text-xs text-gray-400 block">{d.description}</span>}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {isRunning ? (
+                                <span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded">نشط</span>
+                              ) : isExpired ? (
+                                <span className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">منتهي</span>
+                              ) : (
+                                <span className="px-2 py-0.5 text-xs bg-red-100 text-red-600 rounded">ملغي</span>
+                              )}
+                              {isRunning && (
+                                <button
+                                  onClick={() => handleDeactivate(d.id)}
+                                  className="text-red-600 hover:text-red-800 text-xs"
+                                >
+                                  إلغاء
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            حتى {new Date(d.endDate).toLocaleDateString('ar-SA')} · بواسطة {d.createdBy.name}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-sm text-center py-4">لا توجد خصومات</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

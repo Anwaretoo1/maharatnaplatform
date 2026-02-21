@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST: Send a new message
+// POST: Send a new message (or broadcast for admin)
 export async function POST(request: NextRequest) {
   try {
     const session = await getSession();
@@ -47,8 +47,60 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { receiverId, subject, content, imageUrl } = body;
+    const { receiverId, subject, content, imageUrl, broadcast } = body;
 
+    // === BROADCAST (admin only) ===
+    if (broadcast) {
+      if (session.user.role !== 'admin') {
+        return NextResponse.json({ error: 'الرسائل الجماعية متاحة للمسؤول فقط' }, { status: 403 });
+      }
+      if (!content) {
+        return NextResponse.json({ error: 'محتوى الرسالة مطلوب' }, { status: 400 });
+      }
+
+      // broadcast: 'all' | 'learners' | 'craftsmen'
+      const whereFilter: any = { id: { not: session.user.id } };
+      if (broadcast === 'learners') whereFilter.role = 'learner';
+      else if (broadcast === 'craftsmen') whereFilter.role = 'craftsman';
+
+      const recipients = await prisma.user.findMany({
+        where: whereFilter,
+        select: { id: true },
+      });
+
+      if (recipients.length === 0) {
+        return NextResponse.json({ error: 'لا يوجد مستلمون' }, { status: 400 });
+      }
+
+      // Create messages in bulk
+      const messagesData = recipients.map(r => ({
+        senderId: session.user.id,
+        receiverId: r.id,
+        subject: subject || null,
+        content,
+        imageUrl: imageUrl || null,
+      }));
+
+      await prisma.message.createMany({ data: messagesData });
+
+      // Create notifications in bulk
+      const notificationsData = recipients.map(r => ({
+        userId: r.id,
+        title: 'رسالة جماعية من الإدارة',
+        message: `رسالة جديدة من ${session.user.name}: ${subject || content.substring(0, 50)}`,
+        type: 'system',
+        link: '/dashboard/messages',
+      }));
+
+      await prisma.notification.createMany({ data: notificationsData });
+
+      return NextResponse.json({ 
+        message: `تم إرسال الرسالة إلى ${recipients.length} مستخدم`,
+        count: recipients.length 
+      }, { status: 201 });
+    }
+
+    // === SINGLE MESSAGE ===
     if (!receiverId || !content) {
       return NextResponse.json({ error: 'المستلم والمحتوى مطلوبان' }, { status: 400 });
     }

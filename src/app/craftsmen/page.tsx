@@ -14,7 +14,7 @@ export default async function CraftsmenPage() {
           <div key={craftsman.id} className="flex flex-col items-center p-6 border rounded-lg shadow-sm hover:shadow-md transition-shadow bg-white dark:bg-neutral-900 dark:border-neutral-800">
             <div className="w-32 h-32 rounded-full overflow-hidden mb-4 border-4 border-gray-100 dark:border-neutral-800">
               <img 
-                src={craftsman.avatar || `https://ui-avatars.com/api/?name=${craftsman.name}`} 
+                src={craftsman.avatar || craftsman.bio && `https://ui-avatars.com/api/?name=${craftsman.name}` || `https://ui-avatars.com/api/?name=${craftsman.name}`} 
                 alt={craftsman.name} 
                 className="w-full h-full object-cover"
               />
