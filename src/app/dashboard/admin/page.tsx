@@ -2,6 +2,7 @@ import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { DeleteUserButton, ChangeRoleButton, ResetPasswordButton, DeleteCourseAdminButton } from './AdminActions';
 
 export default async function AdminDashboard() {
   const session = await getSession();
@@ -11,23 +12,21 @@ export default async function AdminDashboard() {
     redirect('/dashboard/learner');
   }
 
-  const [userCount, courseCount, enrollmentCount, donationSum, recentUsers, recentCourses, recentDonations] = await Promise.all([
+  const [userCount, courseCount, enrollmentCount, donationSum, allUsers, allCourses, recentDonations] = await Promise.all([
     prisma.user.count(),
     prisma.course.count(),
     prisma.enrollment.count(),
     prisma.donation.aggregate({ _sum: { amount: true } }),
     prisma.user.findMany({
-      take: 10,
       orderBy: { createdAt: 'desc' },
       select: { id: true, name: true, email: true, role: true, createdAt: true }
     }),
     prisma.course.findMany({
-      take: 5,
       orderBy: { createdAt: 'desc' },
       include: { creator: { select: { name: true } }, _count: { select: { enrollments: true } } }
     }),
     prisma.donation.findMany({
-      take: 5,
+      take: 10,
       orderBy: { createdAt: 'desc' }
     })
   ]);
@@ -82,63 +81,110 @@ export default async function AdminDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        {/* Recent Users */}
-        <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-sm border border-gray-200 dark:border-neutral-800 p-6">
-          <h2 className="text-xl font-bold mb-4">أحدث المستخدمين</h2>
+      {/* ===== إدارة المستخدمين ===== */}
+      <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-sm border border-gray-200 dark:border-neutral-800 p-6 mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold">إدارة المستخدمين ({allUsers.length})</h2>
+          <div className="flex gap-2 text-xs text-gray-500">
+            <span>🗑️ حذف</span>
+            <span>🔄 تغيير الدور</span>
+            <span>🔑 إعادة تعيين كلمة المرور</span>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-200 dark:border-neutral-800">
+                <th className="text-right py-3 px-2 font-medium text-gray-500">#</th>
+                <th className="text-right py-3 px-2 font-medium text-gray-500">الاسم</th>
+                <th className="text-right py-3 px-2 font-medium text-gray-500">البريد الإلكتروني</th>
+                <th className="text-right py-3 px-2 font-medium text-gray-500">الدور</th>
+                <th className="text-right py-3 px-2 font-medium text-gray-500">تاريخ التسجيل</th>
+                <th className="text-right py-3 px-2 font-medium text-gray-500">إجراءات</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 dark:divide-neutral-800">
+              {allUsers.map((u, index) => (
+                <tr key={u.id} className="hover:bg-gray-50 dark:hover:bg-neutral-800/50">
+                  <td className="py-3 px-2 text-gray-400 text-xs">{index + 1}</td>
+                  <td className="py-3 px-2 font-medium">{u.name}</td>
+                  <td className="py-3 px-2 text-gray-500 text-xs">{u.email}</td>
+                  <td className="py-3 px-2">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                      u.role === 'admin' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                      u.role === 'craftsman' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                      'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                    }`}>
+                      {u.role === 'admin' ? 'مسؤول' : u.role === 'craftsman' ? 'حرفي' : 'متعلم'}
+                    </span>
+                  </td>
+                  <td className="py-3 px-2 text-gray-500 text-xs">{u.createdAt.toLocaleDateString('ar-SA')}</td>
+                  <td className="py-3 px-2">
+                    {u.role !== 'admin' ? (
+                      <div className="flex items-center gap-3">
+                        <ResetPasswordButton userId={u.id} userName={u.name} />
+                        <ChangeRoleButton userId={u.id} currentRole={u.role} />
+                        <DeleteUserButton userId={u.id} userName={u.name} />
+                      </div>
+                    ) : (
+                      <span className="text-xs text-gray-400">—</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ===== إدارة الدورات ===== */}
+      <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-sm border border-gray-200 dark:border-neutral-800 p-6 mb-8">
+        <h2 className="text-xl font-bold mb-4">إدارة الدورات ({allCourses.length})</h2>
+        {allCourses.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-neutral-800">
-                  <th className="text-right py-3 px-2 font-medium text-gray-500">الاسم</th>
-                  <th className="text-right py-3 px-2 font-medium text-gray-500">البريد</th>
-                  <th className="text-right py-3 px-2 font-medium text-gray-500">الدور</th>
+                  <th className="text-right py-3 px-2 font-medium text-gray-500">#</th>
+                  <th className="text-right py-3 px-2 font-medium text-gray-500">عنوان الدورة</th>
+                  <th className="text-right py-3 px-2 font-medium text-gray-500">المنشئ</th>
+                  <th className="text-right py-3 px-2 font-medium text-gray-500">التصنيف</th>
+                  <th className="text-right py-3 px-2 font-medium text-gray-500">الطلاب</th>
+                  <th className="text-right py-3 px-2 font-medium text-gray-500">السعر</th>
                   <th className="text-right py-3 px-2 font-medium text-gray-500">التاريخ</th>
+                  <th className="text-right py-3 px-2 font-medium text-gray-500">إجراءات</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-neutral-800">
-                {recentUsers.map((u) => (
-                  <tr key={u.id} className="hover:bg-gray-50 dark:hover:bg-neutral-800/50">
-                    <td className="py-3 px-2 font-medium">{u.name}</td>
-                    <td className="py-3 px-2 text-gray-500 text-xs">{u.email}</td>
+                {allCourses.map((c, index) => (
+                  <tr key={c.id} className="hover:bg-gray-50 dark:hover:bg-neutral-800/50">
+                    <td className="py-3 px-2 text-gray-400 text-xs">{index + 1}</td>
+                    <td className="py-3 px-2 font-medium">
+                      <Link href={`/courses/${c.id}`} className="hover:text-blue-600">{c.title}</Link>
+                    </td>
+                    <td className="py-3 px-2 text-gray-500 text-xs">{c.creator.name}</td>
+                    <td className="py-3 px-2 text-xs">{c.category}</td>
+                    <td className="py-3 px-2 text-center">{c._count.enrollments}</td>
                     <td className="py-3 px-2">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                        u.role === 'admin' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                        u.role === 'craftsman' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                        'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                      }`}>
-                        {u.role === 'admin' ? 'مسؤول' : u.role === 'craftsman' ? 'حرفي' : 'متعلم'}
+                      <span className={`text-xs font-bold ${c.isFree ? 'text-green-600' : 'text-amber-600'}`}>
+                        {c.isFree ? 'مجاني' : `$${c.price}`}
                       </span>
                     </td>
-                    <td className="py-3 px-2 text-gray-500 text-xs">{u.createdAt.toLocaleDateString('ar-SA')}</td>
+                    <td className="py-3 px-2 text-gray-500 text-xs">{c.createdAt.toLocaleDateString('ar-SA')}</td>
+                    <td className="py-3 px-2">
+                      <DeleteCourseAdminButton courseId={c.id} courseTitle={c.title} />
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </div>
-
-        {/* Recent Courses */}
-        <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-sm border border-gray-200 dark:border-neutral-800 p-6">
-          <h2 className="text-xl font-bold mb-4">أحدث الدورات</h2>
-          <div className="space-y-3">
-            {recentCourses.map((c) => (
-              <div key={c.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-neutral-800 rounded-md">
-                <div>
-                  <Link href={`/courses/${c.id}`} className="font-medium hover:text-blue-600">{c.title}</Link>
-                  <p className="text-xs text-gray-500">بواسطة {c.creator.name} · {c._count.enrollments} طالب</p>
-                </div>
-                <span className={`text-sm font-bold ${c.isFree ? 'text-green-600' : 'text-amber-600'}`}>
-                  {c.isFree ? 'مجاني' : `$${c.price}`}
-                </span>
-              </div>
-            ))}
-            {recentCourses.length === 0 && <p className="text-gray-500 text-sm">لا توجد دورات بعد</p>}
-          </div>
-        </div>
+        ) : (
+          <p className="text-gray-500 text-sm">لا توجد دورات بعد</p>
+        )}
       </div>
 
-      {/* Recent Donations */}
+      {/* ===== أحدث التبرعات ===== */}
       <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-sm border border-gray-200 dark:border-neutral-800 p-6">
         <h2 className="text-xl font-bold mb-4">أحدث التبرعات</h2>
         {recentDonations.length > 0 ? (
