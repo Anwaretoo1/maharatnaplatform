@@ -96,7 +96,7 @@ export default async function CourseDetailsPage({ params }: { params: Promise<{ 
                   متابعة التعلم
                 </Link>
               ) : (
-                <EnrollButton courseId={course.id} isLoggedIn={!!session} />
+                <EnrollButton courseId={course.id} isLoggedIn={!!session} isFree={course.isFree} price={course.price} />
               )}
 
               <div className="text-sm text-gray-500 text-center mt-4">
