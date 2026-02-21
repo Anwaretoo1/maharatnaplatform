@@ -55,9 +55,9 @@ export default function AddContentForm({ courseId, nextOrder }: { courseId: stri
           value={formData.type}
           onChange={e => setFormData({...formData, type: e.target.value})}
         >
-          <option value="video">فيديو (رابط)</option>
-          <option value="text">نص</option>
-          <option value="image">صورة (رابط)</option>
+          <option value="video">🎬 فيديو (رابط YouTube أو Google Drive)</option>
+          <option value="text">📝 نص</option>
+          <option value="image">🖼️ صورة (رابط Google Drive أو رابط مباشر)</option>
         </select>
       </div>
 
@@ -74,14 +74,23 @@ export default function AddContentForm({ courseId, nextOrder }: { courseId: stri
             onChange={e => setFormData({...formData, content: e.target.value})}
           />
         ) : (
-          <input
-            type="url"
-            required
-            placeholder="https://..."
-            className="w-full px-3 py-2 border rounded-md dark:bg-neutral-800 dark:border-neutral-700"
-            value={formData.content}
-            onChange={e => setFormData({...formData, content: e.target.value})}
-          />
+          <>
+            <input
+              type="url"
+              required
+              placeholder={formData.type === 'video' 
+                ? "https://drive.google.com/file/d/.../view أو YouTube" 
+                : "https://drive.google.com/file/d/.../view"}
+              className="w-full px-3 py-2 border rounded-md dark:bg-neutral-800 dark:border-neutral-700"
+              value={formData.content}
+              onChange={e => setFormData({...formData, content: e.target.value})}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              {formData.type === 'video' 
+                ? '💡 ارفع الفيديو على Google Drive → انقر بالزر الأيمن → مشاركة → تغيير إلى "أي شخص لديه الرابط" → انسخ الرابط والصقه هنا'
+                : '💡 ارفع الصورة على Google Drive → انقر بالزر الأيمن → مشاركة → تغيير إلى "أي شخص لديه الرابط" → انسخ الرابط والصقه هنا'}
+            </p>
+          </>
         )}
       </div>
 

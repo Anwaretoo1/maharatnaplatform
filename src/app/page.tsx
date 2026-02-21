@@ -1,5 +1,6 @@
 ﻿import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { getDriveImageUrl } from "@/lib/driveUtils";
 
 export default async function Home() {
   const courses = await prisma.course.findMany({
@@ -48,7 +49,7 @@ export default async function Home() {
                 <div className="bg-white dark:bg-neutral-900 rounded-xl shadow-sm border border-gray-100 dark:border-neutral-800 overflow-hidden hover:shadow-md transition-shadow h-full flex flex-col">
                   <div className="h-48 bg-gray-200 dark:bg-neutral-800 relative">
                     {course.thumbnailUrl ? (
-                      <img src={course.thumbnailUrl} alt={course.title} className="w-full h-full object-cover" />
+                      <img src={getDriveImageUrl(course.thumbnailUrl)} alt={course.title} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-400">
                         <span className="text-4xl">📚</span>

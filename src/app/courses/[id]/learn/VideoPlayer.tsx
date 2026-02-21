@@ -2,17 +2,14 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { getDisplayUrl, isDriveUrl } from '@/lib/driveUtils';
 
 export default function VideoPlayer({ course, initialProgress }: { course: any, initialProgress: any[], userId?: string }) {
   const [activeContent, setActiveContent] = useState(course.content[0]);
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set(initialProgress.filter(p => p.isCompleted).map(p => p.courseContentId)));
 
-  // If there's a last accessed content, maybe we should start there?
-  // For now, just start at the first one or the user can click.
-
   const handleMarkComplete = async (contentId: string) => {
     try {
-      // Optimistic update
       const newCompleted = new Set(completedIds);
       newCompleted.add(contentId);
       setCompletedIds(newCompleted);
@@ -27,30 +24,57 @@ export default function VideoPlayer({ course, initialProgress }: { course: any, 
     }
   };
 
+  // تحويل الروابط للعرض المباشر
+  const getContentUrl = (content: any) => {
+    return getDisplayUrl(content.content, content.type);
+  };
+
+  const renderContent = () => {
+    if (!activeContent) return <div className="text-white">اختر درساً للبدء</div>;
+
+    const url = getContentUrl(activeContent);
+
+    if (activeContent.type === 'video') {
+      // Google Drive أو YouTube - استخدام iframe
+      if (isDriveUrl(activeContent.content) || activeContent.content.includes('youtube.com') || activeContent.content.includes('youtu.be')) {
+        return (
+          <iframe
+            src={url}
+            className="w-full h-full"
+            allowFullScreen
+            allow="autoplay; encrypted-media"
+            title={activeContent.title}
+          />
+        );
+      }
+      // فيديو مباشر (رابط mp4 مثلاً)
+      return (
+        <video controls className="w-full h-full" src={url}>
+          <source src={url} />
+          المتصفح لا يدعم تشغيل الفيديو
+        </video>
+      );
+    }
+
+    if (activeContent.type === 'image') {
+      return <img src={url} alt={activeContent.title} className="max-h-full max-w-full object-contain" />;
+    }
+
+    // نص
+    return (
+      <div className="p-8 text-white overflow-auto h-full w-full">
+        <h2 className="text-2xl font-bold mb-4">{activeContent.title}</h2>
+        <p className="whitespace-pre-wrap">{activeContent.content}</p>
+      </div>
+    );
+  };
+
   return (
     <div className="flex flex-col lg:flex-row h-full">
       {/* Video/Content Area */}
       <div className="flex-1 flex flex-col">
         <div className="bg-black w-full aspect-video flex items-center justify-center">
-          {activeContent ? (
-            activeContent.type === 'video' ? (
-              <iframe 
-                src={activeContent.content.replace('watch?v=', 'embed/')} 
-                className="w-full h-full" 
-                allowFullScreen 
-                title={activeContent.title}
-              />
-            ) : activeContent.type === 'image' ? (
-              <img src={activeContent.content} alt={activeContent.title} className="max-h-full max-w-full object-contain" />
-            ) : (
-              <div className="p-8 text-white overflow-auto h-full w-full">
-                <h2 className="text-2xl font-bold mb-4">{activeContent.title}</h2>
-                <p className="whitespace-pre-wrap">{activeContent.content}</p>
-              </div>
-            )
-          ) : (
-            <div className="text-white">اختر درساً للبدء</div>
-          )}
+          {renderContent()}
         </div>
         
         <div className="p-6 bg-white dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-800 flex justify-between items-center">
@@ -106,7 +130,7 @@ export default function VideoPlayer({ course, initialProgress }: { course: any, 
                 <p className={`text-sm font-medium ${completedIds.has(item.id) ? 'text-gray-500 line-through' : ''}`}>
                   {index + 1}. {item.title}
                 </p>
-                <p className="text-xs text-gray-400 mt-1">{item.type === 'video' ? 'فيديو' : 'نص'}</p>
+                <p className="text-xs text-gray-400 mt-1">{item.type === 'video' ? '🎬 فيديو' : item.type === 'image' ? '🖼️ صورة' : '📝 نص'}</p>
               </div>
             </button>
           ))}

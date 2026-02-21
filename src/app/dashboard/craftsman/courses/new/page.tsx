@@ -113,10 +113,11 @@ export default function CreateCoursePage() {
           <input
             type="url"
             className="w-full px-3 py-2 border rounded-md dark:bg-neutral-800 dark:border-neutral-700"
-            placeholder="https://example.com/image.jpg"
+            placeholder="https://drive.google.com/file/d/.../view أو رابط صورة مباشر"
             value={formData.thumbnailUrl}
             onChange={e => setFormData({...formData, thumbnailUrl: e.target.value})}
           />
+          <p className="text-xs text-gray-500 mt-1">💡 يمكنك رفع الصورة على Google Drive ومشاركتها بشكل عام ثم لصق الرابط هنا</p>
         </div>
 
         <button

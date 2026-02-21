@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { getAllCourses } from '@/lib/courses';
+import { getDriveImageUrl } from '@/lib/driveUtils';
 
 export default async function CoursesPage() {
   const courses = await getAllCourses();
@@ -14,7 +15,7 @@ export default async function CoursesPage() {
             {course.thumbnailUrl && (
               <div className="h-48 overflow-hidden">
                 <img 
-                  src={course.thumbnailUrl} 
+                  src={getDriveImageUrl(course.thumbnailUrl)} 
                   alt={course.title} 
                   className="w-full h-full object-cover transition-transform hover:scale-105"
                 />
