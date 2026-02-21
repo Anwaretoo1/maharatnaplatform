@@ -16,11 +16,11 @@ export default async function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center">
       {/* Hero Section */}
-      <div className="relative w-full bg-gradient-to-b from-blue-50 to-white dark:from-neutral-900 dark:to-neutral-800 py-24 px-4 sm:px-6 lg:px-8 text-center">
-        <h1 className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6">
+      <div className="relative w-full bg-gradient-to-b from-blue-50 to-white dark:from-neutral-900 dark:to-neutral-800 py-12 sm:py-24 px-4 sm:px-6 lg:px-8 text-center">
+        <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6">
           منصة مهاراتنا
         </h1>
-        <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-10">
+        <p className="text-base sm:text-xl md:text-2xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-10">
           نحفظ التراث ونبني المستقبل. منصة رائدة لتوثيق وتعليم الحرف التقليدية السورية ونقلها للأجيال القادمة.
         </p>
         <div className="flex flex-wrap justify-center gap-4">

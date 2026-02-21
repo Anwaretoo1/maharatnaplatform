@@ -36,16 +36,16 @@ export default async function CourseDetailsPage({ params }: { params: Promise<{ 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-neutral-950 pb-12">
       {/* Hero Section */}
-      <div className="bg-blue-900 text-white py-16">
+      <div className="bg-blue-900 text-white py-8 sm:py-16">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl">
-            <h1 className="text-4xl font-bold mb-4">{course.title}</h1>
-            <p className="text-xl text-blue-100 mb-6">{course.description}</p>
-            <div className="flex items-center gap-4 text-sm">
+            <h1 className="text-2xl sm:text-4xl font-bold mb-4">{course.title}</h1>
+            <p className="text-base sm:text-xl text-blue-100 mb-6">{course.description}</p>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm">
               <span>بواسطة {course.creator.name}</span>
-              <span>•</span>
+              <span className="hidden sm:inline">•</span>
               <span>{course.updatedAt.toLocaleDateString('ar-SA')} آخر تحديث</span>
-              <span>•</span>
+              <span className="hidden sm:inline">•</span>
               <span>{course._count.enrollments} طالب مسجل</span>
             </div>
           </div>
@@ -96,7 +96,7 @@ export default async function CourseDetailsPage({ params }: { params: Promise<{ 
                   متابعة التعلم
                 </Link>
               ) : (
-                <EnrollButton courseId={course.id} isLoggedIn={!!session} isFree={course.isFree} price={course.price} />
+                <EnrollButton courseId={course.id} courseTitle={course.title} isLoggedIn={!!session} isFree={course.isFree} price={course.price} />
               )}
 
               <div className="text-sm text-gray-500 text-center mt-4">

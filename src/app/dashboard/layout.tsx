@@ -16,9 +16,34 @@ export default async function DashboardLayout({
   const user = session.user;
 
   return (
-    <div className="flex min-h-screen bg-gray-100 dark:bg-neutral-950">
-      {/* Sidebar */}
-      <aside className="w-64 bg-white dark:bg-neutral-900 border-l border-gray-200 dark:border-neutral-800 hidden md:block">
+    <div className="flex flex-col md:flex-row min-h-screen bg-gray-100 dark:bg-neutral-950">
+      {/* Mobile Dashboard Nav */}
+      <div className="md:hidden bg-white dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-800 overflow-x-auto">
+        <div className="flex gap-1 px-2 py-2 min-w-max">
+          <Link href="/dashboard/learner" className="flex-shrink-0 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-300 text-xs font-medium">
+            📚 المتعلم
+          </Link>
+          {(user.role === 'craftsman' || user.role === 'admin') && (
+            <Link href="/dashboard/craftsman" className="flex-shrink-0 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-300 text-xs font-medium">
+              🎨 الحرفي
+            </Link>
+          )}
+          {user.role === 'admin' && (
+            <Link href="/dashboard/admin" className="flex-shrink-0 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-300 text-xs font-medium">
+              ⚙️ المسؤول
+            </Link>
+          )}
+          <Link href="/dashboard/messages" className="flex-shrink-0 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-300 text-xs font-medium">
+            ✉️ الرسائل
+          </Link>
+          <Link href="/dashboard/settings" className="flex-shrink-0 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-300 text-xs font-medium">
+            🔒 كلمة المرور
+          </Link>
+        </div>
+      </div>
+
+      {/* Sidebar - desktop */}
+      <aside className="w-64 bg-white dark:bg-neutral-900 border-l border-gray-200 dark:border-neutral-800 hidden md:block flex-shrink-0">
         <div className="p-6">
           <h2 className="text-xl font-bold text-blue-600">لوحة التحكم</h2>
           <p className="text-sm text-gray-500 mt-1">مرحباً، {user.name}</p>
@@ -62,7 +87,7 @@ export default async function DashboardLayout({
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-8 overflow-y-auto">
+      <main className="flex-1 p-3 sm:p-6 md:p-8 overflow-y-auto">
         {children}
       </main>
     </div>

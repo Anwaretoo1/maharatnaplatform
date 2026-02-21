@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
-import { stripe } from '@/lib/stripe';
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,7 +9,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { courseId, stripeSessionId } = await request.json();
+    const { courseId } = await request.json();
 
     if (!courseId) {
       return NextResponse.json({ error: 'Missing courseId' }, { status: 400 });
@@ -25,23 +24,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Course not found' }, { status: 404 });
     }
 
-    // For paid courses, verify Stripe payment
+    // Paid courses must use enrollment codes (via /api/enrollment-codes)
     if (!course.isFree) {
-      if (!stripeSessionId) {
-        return NextResponse.json({ error: 'Payment required for this course' }, { status: 402 });
-      }
-
-      // Verify the Stripe session
-      const checkoutSession = await stripe.checkout.sessions.retrieve(stripeSessionId);
-      
-      if (checkoutSession.payment_status !== 'paid') {
-        return NextResponse.json({ error: 'Payment not completed' }, { status: 402 });
-      }
-
-      // Verify course and user match
-      if (checkoutSession.metadata?.courseId !== courseId || checkoutSession.metadata?.userId !== session.user.id) {
-        return NextResponse.json({ error: 'Payment session mismatch' }, { status: 403 });
-      }
+      return NextResponse.json({ error: 'هذه الدورة مدفوعة. استخدم رمز التسجيل للتسجيل بها.' }, { status: 402 });
     }
 
     // Check if already enrolled
@@ -58,7 +43,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Already enrolled' });
     }
 
-    // Create enrollment
+    // Create enrollment (free courses only)
     const enrollment = await prisma.enrollment.create({
       data: {
         userId: session.user.id,

@@ -2,7 +2,7 @@ import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { DeleteUserButton, ChangeRoleButton, ResetPasswordButton, DeleteCourseAdminButton, SendMessageButton } from './AdminActions';
+import { DeleteUserButton, ChangeRoleButton, ResetPasswordButton, DeleteCourseAdminButton, SendMessageButton, GenerateCodeButton } from './AdminActions';
 import OnlineUsersCard from './OnlineUsersCard';
 
 export default async function AdminDashboard() {
@@ -84,6 +84,11 @@ export default async function AdminDashboard() {
             <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center text-2xl">💰</div>
           </div>
         </div>
+      </div>
+
+      {/* ===== رموز التسجيل ===== */}
+      <div className="flex justify-end mb-4">
+        <GenerateCodeButton courses={allCourses.map(c => ({ id: c.id, title: c.title, isFree: c.isFree, price: c.price }))} />
       </div>
 
       {/* ===== إدارة المستخدمين ===== */}

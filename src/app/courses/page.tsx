@@ -25,7 +25,7 @@ export default async function CoursesPage() {
   const courses = await getAllCourses();
 
   return (
-    <main className="flex min-h-screen flex-col items-center p-8 md:p-24">
+    <main className="flex min-h-screen flex-col items-center p-4 sm:p-8 md:p-24">
       <h1 className="text-4xl font-bold mb-12 text-center">الدورات التدريبية</h1>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full max-w-7xl">

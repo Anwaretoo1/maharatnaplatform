@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { receiverId, subject, content } = body;
+    const { receiverId, subject, content, imageUrl } = body;
 
     if (!receiverId || !content) {
       return NextResponse.json({ error: 'المستلم والمحتوى مطلوبان' }, { status: 400 });
@@ -59,12 +59,66 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'المستخدم المستلم غير موجود' }, { status: 404 });
     }
 
+    const senderRole = session.user.role;
+
+    // === Messaging restrictions ===
+    if (senderRole !== 'admin') {
+      // Check if sender is blocked by receiver
+      const blocked = await prisma.blockedUser.findUnique({
+        where: { blockerId_blockedId: { blockerId: receiverId, blockedId: session.user.id } },
+      });
+      if (blocked) {
+        return NextResponse.json({ error: 'لا يمكنك إرسال رسالة لهذا المستخدم' }, { status: 403 });
+      }
+
+      if (senderRole === 'learner') {
+        // Learner can message: admin OR teachers of courses they're enrolled in
+        if (receiver.role === 'admin') {
+          // Always allowed to message admin
+        } else if (receiver.role === 'craftsman') {
+          // Check if learner is enrolled in any of this teacher's courses
+          const enrolledInTeacherCourse = await prisma.enrollment.findFirst({
+            where: {
+              userId: session.user.id,
+              course: { creatorId: receiverId },
+            },
+          });
+          if (!enrolledInTeacherCourse) {
+            return NextResponse.json({ error: 'يمكنك فقط مراسلة معلمي الدورات المسجل بها' }, { status: 403 });
+          }
+        } else {
+          // Learner cannot message other learners
+          return NextResponse.json({ error: 'لا يمكنك مراسلة هذا المستخدم' }, { status: 403 });
+        }
+      } else if (senderRole === 'craftsman') {
+        // Craftsman can message: admin OR students enrolled in their courses
+        if (receiver.role === 'admin') {
+          // Always allowed to message admin
+        } else if (receiver.role === 'learner') {
+          // Check if this student is enrolled in any of this teacher's courses
+          const studentInCourse = await prisma.enrollment.findFirst({
+            where: {
+              userId: receiverId,
+              course: { creatorId: session.user.id },
+            },
+          });
+          if (!studentInCourse) {
+            return NextResponse.json({ error: 'يمكنك فقط مراسلة الطلاب المسجلين بدوراتك' }, { status: 403 });
+          }
+        } else {
+          // Craftsman cannot message other craftsmen  
+          return NextResponse.json({ error: 'لا يمكنك مراسلة هذا المستخدم' }, { status: 403 });
+        }
+      }
+    }
+
     const message = await prisma.message.create({
       data: {
         senderId: session.user.id,
         receiverId,
         subject: subject || null,
         content,
+        imageUrl: imageUrl || null,
       },
     });
 

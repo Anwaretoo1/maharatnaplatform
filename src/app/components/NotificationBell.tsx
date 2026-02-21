@@ -93,7 +93,7 @@ export default function NotificationBell() {
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 top-full mt-2 w-80 bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-xl z-50 max-h-96 overflow-hidden">
+        <div className="fixed sm:absolute left-2 right-2 sm:left-auto sm:right-0 top-16 sm:top-full sm:mt-2 w-auto sm:w-80 bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-xl z-50 max-h-[70vh] sm:max-h-96 overflow-hidden">
           <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-neutral-700">
             <h3 className="font-bold text-sm">الإشعارات</h3>
             {unreadCount > 0 && (

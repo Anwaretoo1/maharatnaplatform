@@ -30,6 +30,9 @@ model User {
   notifications Notification[]
   sentMessages     Message[] @relation("SentMessages")
   receivedMessages Message[] @relation("ReceivedMessages")
+  blockedUsers     BlockedUser[] @relation("Blocker")
+  blockedBy        BlockedUser[] @relation("Blocked")
+  usedCodes        EnrollmentCode[]
 
   resetToken       String?  @unique
   resetTokenExpiry DateTime?
@@ -50,6 +53,7 @@ model Course {
   creator      User     @relation(fields: [creatorId], references: [id])
   content      CourseContent[]
   enrollments  Enrollment[]
+  enrollmentCodes EnrollmentCode[]
 }
 
 model CourseContent {
@@ -124,6 +128,7 @@ model Message {
   receiverId String
   subject    String?
   content    String   @db.Text
+  imageUrl   String?  // Image attachment (payment receipt, etc.)
   isRead     Boolean  @default(false)
   createdAt  DateTime @default(now())
 
@@ -131,5 +136,30 @@ model Message {
   receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
 
   @@index([receiverId, isRead])
+}
+
+model BlockedUser {
+  id        String   @id @default(uuid())
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+
+  blocker   User     @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked   User     @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+}
+
+model EnrollmentCode {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  courseId   String
+  isUsed    Boolean  @default(false)
+  usedById  String?
+  createdAt DateTime @default(now())
+  usedAt    DateTime?
+
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  usedBy    User?    @relation(fields: [usedById], references: [id])
 }
 
