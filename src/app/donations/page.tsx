@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { getSession } from '@/lib/auth';
 import DonateButton from './DonateButton';
+// Force Vercel rebuild - updated Feb 22
 
 export default async function DonationsPage() {
   const donations = await getAllDonations();
