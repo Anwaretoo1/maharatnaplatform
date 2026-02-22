@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { getAllCourses } from '@/lib/courses';
 import { getDriveImageUrl } from '@/lib/driveUtils';
 
+export const dynamic = 'force-dynamic';
+
 const categoryLabels: Record<string, string> = {
   woodwork: 'نجارة وحفر على الخشب',
   mosaic: 'فسيفساء',

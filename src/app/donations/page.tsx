@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { getSession } from '@/lib/auth';
 import DonateButton from './DonateButton';
+
+export const dynamic = 'force-dynamic';
 // Force Vercel rebuild - updated Feb 22
 
 export default async function DonationsPage() {

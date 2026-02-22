@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { DeleteUserButton, ChangeRoleButton, ResetPasswordButton, DeleteCourseAdminButton, SendMessageButton, GenerateCodeButton, DiscountManager } from './AdminActions';
 import OnlineUsersCard from './OnlineUsersCard';
 
+export const dynamic = 'force-dynamic';
+
 export default async function AdminDashboard() {
   const session = await getSession();
   if (!session) return null;

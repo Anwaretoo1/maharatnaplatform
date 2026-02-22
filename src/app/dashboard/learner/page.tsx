@@ -2,6 +2,8 @@ import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
+
 export default async function LearnerDashboard() {
   const session = await getSession();
   if (!session) return null;

@@ -3,6 +3,8 @@ import { getSession } from '@/lib/auth';
 import Link from 'next/link';
 import EnrollButton from './EnrollButton';
 
+export const dynamic = 'force-dynamic';
+
 export default async function CourseDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const course = await prisma.course.findUnique({

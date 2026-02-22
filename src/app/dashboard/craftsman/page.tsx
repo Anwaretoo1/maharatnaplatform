@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { DiscountManager } from '@/app/dashboard/admin/AdminActions';
 
+export const dynamic = 'force-dynamic';
+
 export default async function CraftsmanDashboard() {
   const session = await getSession();
   if (!session) return null;

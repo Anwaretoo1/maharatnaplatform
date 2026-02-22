@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { updateSession } from '@/lib/auth';
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   // Update session expiration if it exists
   await updateSession(request);
 
@@ -14,8 +14,6 @@ export async function proxy(request: NextRequest) {
     if (!session) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
-    // Here you could also decode the session and check for roles
-    // but for now, just checking if logged in is a good start.
   }
 
   return NextResponse.next();

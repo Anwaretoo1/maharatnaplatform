@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { getSession } from '@/lib/auth';
 import DonateButton from '@/app/donations/DonateButton';
 
+export const dynamic = 'force-dynamic';
+
 export default async function CraftsmanProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await getSession();

@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { getAllUsers } from '@/lib/users';
 
+export const dynamic = 'force-dynamic';
+
 export default async function CraftsmenPage() {
   const users = await getAllUsers();
   const craftsmen = users.filter(user => user.role === 'craftsman');

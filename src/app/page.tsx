@@ -2,6 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getDriveImageUrl } from "@/lib/driveUtils";
 
+export const dynamic = 'force-dynamic';
+
 export default async function Home() {
   const courses = await prisma.course.findMany({
     take: 6,
