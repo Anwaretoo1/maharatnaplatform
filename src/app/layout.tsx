@@ -157,28 +157,116 @@ export default async function RootLayout({
         {user && <OnlineTracker />}
         <PWAInstallPrompt />
         {children}
-        <footer className="bg-gray-50 dark:bg-neutral-900 border-t border-gray-200 dark:border-neutral-800 mt-auto">
-          <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-              <div>
-                <h3 className="font-bold text-lg mb-3 text-gray-800 dark:text-gray-200">منصة مهاراتنا</h3>
-                <p className="text-gray-500 text-sm">منصة رائدة لتوثيق وتعليم الحرف التقليدية السورية ونقلها للأجيال القادمة.</p>
+        
+        {/* Modern Footer */}
+        <footer className="bg-gradient-to-b from-white to-gray-50 dark:from-neutral-900 dark:to-neutral-950 border-t-2 border-blue-100 dark:border-neutral-800 mt-auto">
+          <div className="max-w-7xl mx-auto py-12 sm:py-16 px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+              {/* Brand */}
+              <div className="sm:col-span-2 lg:col-span-1">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center text-white text-lg font-bold">
+                    📚
+                  </div>
+                  <h3 className="font-bold text-lg text-gray-900 dark:text-white">مهاراتنا</h3>
+                </div>
+                <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+                  منصة رائدة لتوثيق وتعليم الحرف التقليدية السورية ونقل التراث للأجيال القادمة.
+                </p>
               </div>
+
+              {/* Quick Links */}
               <div>
-                <h3 className="font-bold text-lg mb-3 text-gray-800 dark:text-gray-200">روابط سريعة</h3>
-                <ul className="space-y-2 text-sm text-gray-500">
-                  <li><Link href="/courses" className="hover:text-blue-600">الدورات</Link></li>
-                  <li><Link href="/craftsmen" className="hover:text-blue-600">الحرفيون</Link></li>
-                  <li><Link href="/donations" className="hover:text-blue-600">التبرعات</Link></li>
+                <h4 className="font-bold text-gray-900 dark:text-white mb-4 text-sm">روابط سريعة</h4>
+                <ul className="space-y-3 text-sm">
+                  <li>
+                    <Link 
+                      href="/" 
+                      className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-2"
+                    >
+                      <span>←</span> الرئيسية
+                    </Link>
+                  </li>
+                  <li>
+                    <Link 
+                      href="/courses" 
+                      className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-2"
+                    >
+                      <span>←</span> الدورات
+                    </Link>
+                  </li>
                 </ul>
               </div>
+
+              {/* Support */}
               <div>
-                <h3 className="font-bold text-lg mb-3 text-gray-800 dark:text-gray-200">تواصل معنا</h3>
-                <p className="text-gray-500 text-sm">info@maharat-syria.com</p>
+                <h4 className="font-bold text-gray-900 dark:text-white mb-4 text-sm">الدعم</h4>
+                <ul className="space-y-3 text-sm">
+                  <li>
+                    <a 
+                      href="mailto:info@maharat-syria.com" 
+                      className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-2"
+                    >
+                      <span>✉️</span> البريد الإلكتروني
+                    </a>
+                  </li>
+                  <li>
+                    <a 
+                      href="tel:+963" 
+                      className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-2"
+                    >
+                      <span>📱</span> هاتفنا
+                    </a>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Legal */}
+              <div>
+                <h4 className="font-bold text-gray-900 dark:text-white mb-4 text-sm">قانوني</h4>
+                <ul className="space-y-3 text-sm">
+                  <li>
+                    <a 
+                      href="#" 
+                      className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                    >
+                      سياسة الخصوصية
+                    </a>
+                  </li>
+                  <li>
+                    <a 
+                      href="#" 
+                      className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                    >
+                      شروط الخدمة
+                    </a>
+                  </li>
+                </ul>
               </div>
             </div>
-            <div className="text-center text-gray-500 text-sm border-t border-gray-200 dark:border-neutral-800 pt-6">
-              <p>&copy; {new Date().getFullYear()} منصة مهاراتنا. جميع الحقوق محفوظة.</p>
+
+            {/* Divider */}
+            <div className="border-t border-gray-200 dark:border-neutral-800 my-8"></div>
+
+            {/* Bottom */}
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+              <p className="text-gray-600 dark:text-gray-400 text-sm text-center sm:text-right">
+                &copy; {new Date().getFullYear()} منصة مهاراتنا. جميع الحقوق محفوظة.
+              </p>
+              <div className="flex items-center gap-4">
+                <span className="text-xs text-gray-500 dark:text-gray-500">تابعنا:</span>
+                <div className="flex gap-3">
+                  <a href="#" className="w-8 h-8 bg-gray-200 dark:bg-neutral-800 hover:bg-blue-500 dark:hover:bg-blue-600 rounded-full flex items-center justify-center text-gray-600 hover:text-white transition-all text-sm">
+                    f
+                  </a>
+                  <a href="#" className="w-8 h-8 bg-gray-200 dark:bg-neutral-800 hover:bg-blue-500 dark:hover:bg-blue-600 rounded-full flex items-center justify-center text-gray-600 hover:text-white transition-all text-sm">
+                    🐦
+                  </a>
+                  <a href="#" className="w-8 h-8 bg-gray-200 dark:bg-neutral-800 hover:bg-blue-500 dark:hover:bg-blue-600 rounded-full flex items-center justify-center text-gray-600 hover:text-white transition-all text-sm">
+                    📷
+                  </a>
+                </div>
+              </div>
             </div>
           </div>
         </footer>
