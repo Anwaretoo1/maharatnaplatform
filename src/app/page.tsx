@@ -1,4 +1,4 @@
-﻿// Force rebuild
+// v2026.02.22
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getDriveImageUrl } from "@/lib/driveUtils";
@@ -19,19 +19,19 @@ export default async function Home() {
       {/* Hero Section */}
       <div className="relative w-full bg-gradient-to-b from-blue-50 to-white dark:from-neutral-900 dark:to-neutral-800 py-12 sm:py-24 px-4 sm:px-6 lg:px-8 text-center">
         <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6">
-          منصة مهاراتنا
+          ���� ��������
         </h1>
         <p className="text-base sm:text-xl md:text-2xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-10">
-          نحفظ التراث ونبني المستقبل. منصة رائدة لتوثيق وتعليم الحرف التقليدية السورية ونقلها للأجيال القادمة.
+          ���� ������ ����� ��������. ���� ����� ������ ������ ����� ��������� ������� ������ ������� �������.
         </p>
         
         {/* Quranic Verse */}
         <div className="bg-gradient-to-r from-blue-500/10 to-blue-600/10 dark:from-blue-900/20 dark:to-blue-800/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-6 sm:p-8 mb-10 max-w-2xl mx-auto backdrop-blur-sm">
           <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-blue-700 dark:text-blue-300 leading-relaxed" style={{ fontFamily: 'Georgia, serif' }}>
-            وَقُل رَّبِّ زِدْنِي عِلْماً
+            ����� ������ ������� �������
           </p>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-3">
-            سورة طه - الآية 114
+            ���� �� - ����� 114
           </p>
         </div>
         
@@ -40,20 +40,20 @@ export default async function Home() {
             href="/courses"
             className="btn btn-primary text-base sm:text-lg px-8 py-3 rounded-full"
           >
-            تصفح الدورات
+            ���� �������
           </Link>
           <Link
             href="/register"
             className="btn btn-secondary text-base sm:text-lg px-8 py-3 rounded-full"
           >
-            انضم إلينا
+            ���� �����
           </Link>
         </div>
       </div>
 
       {/* Latest Courses Section */}
       <div className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl w-full">
-        <h2 className="text-3xl font-bold text-center mb-12">أحدث الدورات</h2>
+        <h2 className="text-3xl font-bold text-center mb-12">���� �������</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {courses.length > 0 ? (
             courses.map((course) => (
@@ -64,11 +64,11 @@ export default async function Home() {
                       <img src={getDriveImageUrl(course.thumbnailUrl)} alt={course.title} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-400">
-                        <span className="text-4xl">📚</span>
+                        <span className="text-4xl">??</span>
                       </div>
                     )}
                     <div className="absolute top-2 right-2 bg-white dark:bg-black px-2 py-1 rounded text-xs font-bold shadow-sm">
-                      {course.isFree ? 'مجاني' : `$${course.price}`}
+                      {course.isFree ? '�����' : `$${course.price}`}
                     </div>
                   </div>
                   <div className="p-6 flex-1 flex flex-col">
@@ -86,46 +86,46 @@ export default async function Home() {
             ))
           ) : (
             <div className="col-span-full text-center py-12 text-gray-500">
-              لا توجد دورات متاحة حالياً. كن أول من ينشر دورة!
+              �� ���� ����� ����� ������. �� ��� �� ���� ����!
             </div>
           )}
         </div>
         <div className="text-center mt-12">
           <Link href="/courses" className="text-blue-600 hover:underline font-medium">
-            عرض جميع الدورات &larr;
+            ��� ���� ������� &larr;
           </Link>
         </div>
       </div>
 
       {/* Features Section */}
       <div className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl w-full bg-gray-50 dark:bg-neutral-900/50 rounded-3xl my-8">
-        <h2 className="text-3xl font-bold text-center mb-12">ماذا نقدم؟</h2>
+        <h2 className="text-3xl font-bold text-center mb-12">���� ����</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="p-6 bg-white dark:bg-neutral-900 rounded-xl shadow-sm border border-gray-100 dark:border-neutral-800 text-center">
             <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
-              🎥
+              ??
             </div>
-            <h3 className="text-xl font-bold mb-2">دورات تعليمية</h3>
+            <h3 className="text-xl font-bold mb-2">����� �������</h3>
             <p className="text-gray-600 dark:text-gray-400">
-              دروس مسجلة ومباشرة من أمهر الحرفيين لتعلم أصول الصنعة.
+              ���� ����� ������� �� ���� �������� ����� ���� ������.
             </p>
           </div>
           <div className="p-6 bg-white dark:bg-neutral-900 rounded-xl shadow-sm border border-gray-100 dark:border-neutral-800 text-center">
             <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
-              🤝
+              ??
             </div>
-            <h3 className="text-xl font-bold mb-2">مجتمع الحرفيين</h3>
+            <h3 className="text-xl font-bold mb-2">����� ��������</h3>
             <p className="text-gray-600 dark:text-gray-400">
-              تواصل مع الخبراء وتبادل الخبرات في مجتمع متخصص.
+              ����� �� ������� ������ ������� �� ����� �����.
             </p>
           </div>
           <div className="p-6 bg-white dark:bg-neutral-900 rounded-xl shadow-sm border border-gray-100 dark:border-neutral-800 text-center">
             <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
-              🏺
+              ??
             </div>
-            <h3 className="text-xl font-bold mb-2">دعم التراث</h3>
+            <h3 className="text-xl font-bold mb-2">��� ������</h3>
             <p className="text-gray-600 dark:text-gray-400">
-              ساهم في الحفاظ على الهوية الثقافية ودعم أصحاب الحرف.
+              ���� �� ������ ��� ������ �������� ���� ����� �����.
             </p>
           </div>
         </div>
