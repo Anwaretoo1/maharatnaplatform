@@ -59,19 +59,27 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-8 md:p-24 bg-gray-50 dark:bg-neutral-950">
-      <div className="w-full max-w-md bg-white dark:bg-neutral-900 rounded-lg shadow-md p-8 border border-gray-200 dark:border-neutral-800">
-        <h1 className="text-2xl font-bold text-center mb-6">إنشاء حساب جديد</h1>
+    <main className="flex min-h-screen flex-col items-center justify-center px-4 py-8 bg-gray-100 dark:bg-neutral-950">
+      <div className="w-full max-w-md bg-white dark:bg-neutral-900 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-neutral-800">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/40 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-3xl">✨</span>
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">إنشاء حساب جديد</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">انضم إلى مجتمع مهاراتنا</p>
+        </div>
         
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-            <span className="block sm:inline">{error}</span>
+          <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 p-3 rounded-lg text-sm mb-5">
+            <span>⚠️</span>
+            <span>{error}</span>
           </div>
         )}
 
-        <form className="space-y-4" onSubmit={handleSubmit}>
+        <form className="space-y-5" onSubmit={handleSubmit}>
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label htmlFor="name" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
               الاسم الكامل
             </label>
             <input
@@ -80,13 +88,13 @@ export default function RegisterPage() {
               value={formData.name}
               onChange={handleChange}
               required
-              className="w-full px-3 py-2 border border-gray-300 dark:border-neutral-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-neutral-800"
+              className="form-input"
               placeholder="الاسم الكامل"
             />
           </div>
 
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label htmlFor="email" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
               البريد الإلكتروني
             </label>
             <input
@@ -95,13 +103,13 @@ export default function RegisterPage() {
               value={formData.email}
               onChange={handleChange}
               required
-              className="w-full px-3 py-2 border border-gray-300 dark:border-neutral-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-neutral-800"
+              className="form-input"
               placeholder="name@example.com"
             />
           </div>
           
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label htmlFor="password" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
               كلمة المرور
             </label>
             <input
@@ -110,7 +118,7 @@ export default function RegisterPage() {
               value={formData.password}
               onChange={handleChange}
               required
-              className="w-full px-3 py-2 border border-gray-300 dark:border-neutral-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-neutral-800"
+              className="form-input"
               placeholder="••••••••"
             />
           </div>
@@ -148,15 +156,15 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading}
-            className={`w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition-colors mt-4 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className="btn btn-primary btn-full"
           >
-            {loading ? 'جاري الإنشاء...' : 'إنشاء الحساب'}
+            {loading ? '⏳ جاري الإنشاء...' : 'إنشاء الحساب'}
           </button>
         </form>
         
-        <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
+        <div className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
           لديك حساب بالفعل؟{' '}
-          <Link href="/login" className="text-blue-600 hover:underline font-medium">
+          <Link href="/login" className="text-blue-600 dark:text-blue-400 hover:underline font-semibold">
             تسجيل الدخول
           </Link>
         </div>
