@@ -1,8 +1,15 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getDriveImageUrl } from "@/lib/driveUtils";
+import type { Metadata } from "next";
 
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: "منصة مهاراتنا - تعلّم الحرف واكسب من الإنترنت",
+  description: "منصة مهاراتنا: تعلّم الحرف التقليدية السورية وتنمية المهارات أونلاين. دورات مجانية ومدفوعة في النجارة، الخياطة، الطبخ والتصميم. علّم مهارتك واكسب من الإنترنت.",
+  keywords: ["دورات تعليمية", "تعليم عن بعد", "تنمية المهارات", "كسب من الإنترنت", "حرف سورية", "مهاراتنا", "دورات مجانية", "ربح من التدريس", "تعلم أونلاين"],
+};
 
 export default async function Home() {
   const courses = await prisma.course.findMany({
@@ -128,6 +135,51 @@ export default async function Home() {
             <p className="text-gray-600 dark:text-gray-400">
               توثيق وحفظ المهارات التقليدية السورية للأجيال القادمة.
             </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Teacher & Student CTA Cards */}
+      <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl w-full">
+        <h2 className="text-3xl font-bold text-center mb-4 text-gray-900 dark:text-white">أنت من تختار دورك</h2>
+        <p className="text-center text-gray-500 dark:text-gray-400 mb-10 max-w-xl mx-auto">سواء كنت تريد التعلم أو التعليم، مهاراتنا هي منصتك</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* For Teachers */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 to-blue-800 rounded-3xl p-8 text-white">
+            <div className="text-5xl mb-4">👨‍🏫</div>
+            <h3 className="text-2xl font-bold mb-3">لديك مهارة؟ علّمها واكسب</h3>
+            <p className="text-blue-200 mb-6 leading-relaxed">
+              حوّل حرفتك ومعرفتك إلى دخل حقيقي من الإنترنت. أنشئ دورتك بسهولة ومجاناً وابدأ كسب المال من اليوم الأول.
+            </p>
+            <ul className="text-blue-100 text-sm space-y-2 mb-6">
+              <li>✓ تسجيل مجاني بدون رسوم</li>
+              <li>✓ أنت تحدد سعر الدورة</li>
+              <li>✓ دعم كامل لرفع الفيديوهات</li>
+              <li>✓ لوحة تحكم لمتابعة إيراداتك</li>
+            </ul>
+            <Link href="/teach" className="inline-block bg-white text-blue-700 hover:bg-blue-50 font-bold px-6 py-3 rounded-full transition-colors">
+              ابدأ التعليم ←
+            </Link>
+            <div className="absolute -bottom-6 -left-6 text-[120px] opacity-10">🎓</div>
+          </div>
+
+          {/* For Students */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-emerald-600 to-teal-700 rounded-3xl p-8 text-white">
+            <div className="text-5xl mb-4">📚</div>
+            <h3 className="text-2xl font-bold mb-3">تريد تعلّم مهارة جديدة؟</h3>
+            <p className="text-emerald-100 mb-6 leading-relaxed">
+              تعلّم الحرف والمهارات العملية من معلمين سوريين محترفين. دورات مجانية ومدفوعة بأسعار مناسبة.
+            </p>
+            <ul className="text-emerald-100 text-sm space-y-2 mb-6">
+              <li>✓ مئات الدورات المجانية</li>
+              <li>✓ تعلّم بوقتك وسرعتك</li>
+              <li>✓ شهادة إتمام لكل دورة</li>
+              <li>✓ معلمون خبراء ومتخصصون</li>
+            </ul>
+            <Link href="/learn" className="inline-block bg-white text-emerald-700 hover:bg-emerald-50 font-bold px-6 py-3 rounded-full transition-colors">
+              ابدأ التعلم ←
+            </Link>
+            <div className="absolute -bottom-6 -left-6 text-[120px] opacity-10">🌟</div>
           </div>
         </div>
       </div>

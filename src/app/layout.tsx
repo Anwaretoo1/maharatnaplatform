@@ -63,6 +63,38 @@ export default async function RootLayout({
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        {/* JSON-LD Structured Data for Google */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "EducationalOrganization",
+              "name": "منصة مهاراتنا",
+              "alternateName": "Maharatna Platform",
+              "url": "https://www.maharat-syria.com",
+              "logo": "https://www.maharat-syria.com/icons/icon-192x192.png",
+              "description": "منصة تعليمية عربية متخصصة في الحرف التقليدية السورية والمهارات العملية. تعلّم أو علّم واكسب من الإنترنت.",
+              "sameAs": [],
+              "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "USD",
+                "description": "دورات مجانية ومدفوعة في الحرف والمهارات"
+              },
+              "address": {
+                "@type": "PostalAddress",
+                "addressCountry": "SY"
+              },
+              "contactPoint": {
+                "@type": "ContactPoint",
+                "email": "info@maharat-syria.com",
+                "contactType": "customer support",
+                "availableLanguage": "Arabic"
+              }
+            })
+          }}
+        />
       </head>
       <body className={inter.className}>
         {/* Modern Navigation */}
@@ -92,6 +124,12 @@ export default async function RootLayout({
                   className="text-gray-800 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 font-bold transition-colors text-base"
                 >
                   الدورات
+                </Link>
+                <Link 
+                  href="/teach" 
+                  className="text-gray-800 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 font-bold transition-colors text-base"
+                >
+                  علّم واكسب
                 </Link>
               </div>
 
@@ -214,19 +252,23 @@ export default async function RootLayout({
                 <h4 className="font-bold text-gray-900 dark:text-white mb-4 text-sm">روابط سريعة</h4>
                 <ul className="space-y-3 text-sm">
                   <li>
-                    <Link 
-                      href="/" 
-                      className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-2"
-                    >
+                    <Link href="/" className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-2">
                       <span>←</span> الرئيسية
                     </Link>
                   </li>
                   <li>
-                    <Link 
-                      href="/courses" 
-                      className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-2"
-                    >
+                    <Link href="/courses" className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-2">
                       <span>←</span> الدورات
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/teach" className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-2">
+                      <span>←</span> علّم واكسب
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/learn" className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-2">
+                      <span>←</span> ابدأ التعلم
                     </Link>
                   </li>
                 </ul>
