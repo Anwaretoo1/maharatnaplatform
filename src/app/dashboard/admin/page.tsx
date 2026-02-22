@@ -126,7 +126,7 @@ export default async function AdminDashboard() {
                       u.role === 'craftsman' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
                       'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
                     }`}>
-                      {u.role === 'admin' ? 'مسؤول' : u.role === 'craftsman' ? 'حرفي' : 'متعلم'}
+                      {u.role === 'admin' ? 'مسؤول' : u.role === 'craftsman' ? 'معلم' : 'متعلم'}
                     </span>
                   </td>
                   <td className="py-3 px-2 text-gray-500 text-xs">{u.createdAt.toLocaleDateString('ar-SA')}</td>

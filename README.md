@@ -71,7 +71,7 @@ npm run dev
 | الدور | البريد | كلمة المرور |
 |------|-------|-----------|
 | مسؤول | admin@maharat-syria.com | admin123 |
-| معلم (مثال) | craftsman@example.com | password |
+| معلم (مثال) | instructor@example.com | password |
 | طالب (مثال) | learner@example.com | password |
 
 ---
@@ -89,7 +89,7 @@ src/
 │   │   └── ...
 │   ├── dashboard/        # لوحة التحكم
 │   │   ├── admin/        # لوحة المسؤول
-│   │   ├── craftsman/    # لوحة المعلم
+│   │   ├── instructor/    # لوحة المعلم
 │   │   ├── learner/      # صفحة الطالب
 │   │   └── profile/      # الملف الشخصي
 │   ├── courses/          # صفحات الدورات

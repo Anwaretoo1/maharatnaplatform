@@ -3,11 +3,11 @@ import Link from 'next/link';
 import { getSession } from '@/lib/auth';
 import DonateButton from '@/app/donations/DonateButton';
 
-export default async function CraftsmanProfilePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function InstructorProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await getSession();
 
-  const craftsman = await prisma.user.findUnique({
+  const instructor = await prisma.user.findUnique({
     where: { id },
     select: {
       id: true,
@@ -28,17 +28,17 @@ export default async function CraftsmanProfilePage({ params }: { params: Promise
     }
   });
 
-  if (!craftsman || craftsman.role !== 'craftsman') {
+  if (!instructor || instructor.role !== 'craftsman') {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center p-8">
-        <h1 className="text-2xl font-bold mb-4">الحرفي غير موجود</h1>
-        <Link href="/craftsmen" className="text-blue-600 hover:underline">العودة لقائمة الحرفيين</Link>
+        <h1 className="text-2xl font-bold mb-4">المعلم غير موجود</h1>
+        <Link href="/instructors" className="text-blue-600 hover:underline">العودة لقائمة المعلمين</Link>
       </main>
     );
   }
 
-  const parsedSkills = craftsman.skills ? JSON.parse(craftsman.skills) : [];
-  const totalStudents = craftsman.courses.reduce((sum, c) => sum + c._count.enrollments, 0);
+  const parsedSkills = instructor.skills ? JSON.parse(instructor.skills) : [];
+  const totalStudents = instructor.courses.reduce((sum, c) => sum + c._count.enrollments, 0);
 
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-neutral-950">
@@ -47,13 +47,13 @@ export default async function CraftsmanProfilePage({ params }: { params: Promise
         <div className="max-w-4xl mx-auto px-4 flex flex-col md:flex-row items-center gap-8">
           <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white/30 flex-shrink-0">
             <img
-              src={craftsman.profileImage || craftsman.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(craftsman.name)}&size=128&background=random`}
-              alt={craftsman.name}
+              src={instructor.profileImage || instructor.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(instructor.name)}&size=128&background=random`}
+              alt={instructor.name}
               className="w-full h-full object-cover"
             />
           </div>
-          <div className="text-center md:text-right">
-            <h1 className="text-3xl font-bold mb-2">{craftsman.name}</h1>
+          <div className="flex-1">
+            <h1 className="text-3xl font-bold mb-2">{instructor.name}</h1>
             <p className="text-blue-200 mb-3">حرفي ومعلم</p>
             <div className="flex flex-wrap gap-2 justify-center md:justify-start">
               {parsedSkills.map((skill: string, i: number) => (
@@ -68,7 +68,7 @@ export default async function CraftsmanProfilePage({ params }: { params: Promise
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4 mb-8">
           <div className="bg-white dark:bg-neutral-900 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-neutral-800 text-center">
-            <p className="text-2xl font-bold text-blue-600">{craftsman.courses.length}</p>
+            <p className="text-2xl font-bold text-blue-600">{instructor.courses.length}</p>
             <p className="text-sm text-gray-500">دورة</p>
           </div>
           <div className="bg-white dark:bg-neutral-900 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-neutral-800 text-center">
@@ -76,24 +76,24 @@ export default async function CraftsmanProfilePage({ params }: { params: Promise
             <p className="text-sm text-gray-500">طالب</p>
           </div>
           <div className="bg-white dark:bg-neutral-900 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-neutral-800 text-center">
-            <p className="text-2xl font-bold text-amber-600">{craftsman.createdAt.toLocaleDateString('ar-SA')}</p>
+            <p className="text-2xl font-bold text-amber-600">{instructor.createdAt.toLocaleDateString('ar-SA')}</p>
             <p className="text-sm text-gray-500">تاريخ الانضمام</p>
           </div>
         </div>
 
         {/* Bio */}
-        {craftsman.bio && (
+        {instructor.bio && (
           <div className="bg-white dark:bg-neutral-900 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-neutral-800 mb-8">
             <h2 className="text-xl font-bold mb-3">نبذة تعريفية</h2>
-            <p className="text-gray-600 dark:text-gray-400 leading-relaxed">{craftsman.bio}</p>
+            <p className="text-gray-600 dark:text-gray-400 leading-relaxed">{instructor.bio}</p>
           </div>
         )}
 
         {/* Courses */}
         <h2 className="text-2xl font-bold mb-6">الدورات</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {craftsman.courses.length > 0 ? (
-            craftsman.courses.map((course) => (
+          {instructor.courses.length > 0 ? (
+            instructor.courses.map((course) => (
               <Link key={course.id} href={`/courses/${course.id}`} className="group">
                 <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-sm border border-gray-200 dark:border-neutral-800 overflow-hidden hover:shadow-md transition-shadow">
                   {course.thumbnailUrl ? (
@@ -123,12 +123,12 @@ export default async function CraftsmanProfilePage({ params }: { params: Promise
 
         {/* Contact for Donation */}
         <div className="mt-12 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 p-8 rounded-2xl border border-green-200 dark:border-green-800">
-          <h2 className="text-xl font-bold mb-3">ادعم هذا الحرفي</h2>
+          <h2 className="text-xl font-bold mb-3">ادعم هذا المعلم</h2>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            يمكنك دعم {craftsman.name} من خلال التواصل مع إدارة المنصة لتنسيق عملية التبرع وإيصالها للحرفي.
+            يمكنك دعم {instructor.name} من خلال التواصل مع إدارة المنصة لتنسيق عملية التبرع وإيصالها للمعلم.
           </p>
           {session ? (
-            <DonateButton type="craftsman" craftsmanName={craftsman.name} />
+            <DonateButton type="instructor" instructorName={instructor.name} />
           ) : (
             <Link
               href="/login?redirect=/donations"

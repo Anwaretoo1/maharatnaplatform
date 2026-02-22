@@ -64,7 +64,7 @@ export default function OnlineUsersCard({ initialCount }: { initialCount: number
                 u.role === 'craftsman' ? 'bg-green-100 text-green-600' :
                 'bg-blue-100 text-blue-600'
               }`}>
-                {u.role === 'admin' ? 'مسؤول' : u.role === 'craftsman' ? 'حرفي' : 'متعلم'}
+                {u.role === 'admin' ? 'مسؤول' : u.role === 'craftsman' ? 'معلم' : 'متعلم'}
               </span>
             </div>
           ))}

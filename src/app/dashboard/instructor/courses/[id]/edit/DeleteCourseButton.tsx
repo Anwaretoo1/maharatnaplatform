@@ -17,7 +17,7 @@ export default function DeleteCourseButton({ courseId }: { courseId: string }) {
       });
 
       if (res.ok) {
-        router.push('/dashboard/craftsman');
+        router.push('/dashboard/instructor');
         router.refresh();
       } else {
         alert('حدث خطأ أثناء حذف الدورة');

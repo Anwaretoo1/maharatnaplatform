@@ -4,14 +4,17 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface DonateButtonProps {
-  type: 'platform' | 'craftsman' | 'partnership';
+  type: 'platform' | 'craftsman' | 'instructor' | 'partnership';
   craftsmanName?: string;
+  instructorName?: string;
 }
 
-export default function DonateButton({ type, craftsmanName }: DonateButtonProps) {
+export default function DonateButton({ type, craftsmanName, instructorName }: DonateButtonProps) {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const router = useRouter();
+  
+  const name = instructorName || craftsmanName;
 
   const handleDonate = async () => {
     setLoading(true);
@@ -33,9 +36,9 @@ export default function DonateButton({ type, craftsmanName }: DonateButtonProps)
       if (type === 'platform') {
         subject = 'طلب تبرع لدعم المنصة';
         content = 'أرغب في التبرع لدعم منصة مهاراتنا.\n\nأرجو إرشادي لطريقة التبرع.\n\nشكراً لكم.';
-      } else if (type === 'craftsman') {
-        subject = `طلب تبرع لدعم الحرفي: ${craftsmanName}`;
-        content = `أرغب في التبرع لدعم الحرفي "${craftsmanName}".\n\nأرجو إرشادي لطريقة التبرع وإيصاله للحرفي.\n\nشكراً لكم.`;
+      } else if (type === 'craftsman' || type === 'instructor') {
+        subject = `طلب تبرع لدعم المعلم: ${name}`;
+        content = `أرغب في التبرع لدعم المعلم "${name}".\n\nأرجو إرشادي لطريقة التبرع وإيصاله للمعلم.\n\nشكراً لكم.`;
       } else {
         subject = 'طلب شراكة مع المنصة';
         content = 'أرغب في الاستفسار عن فرص الشراكة مع منصة مهاراتنا.\n\nشكراً لكم.';
@@ -78,12 +81,12 @@ export default function DonateButton({ type, craftsmanName }: DonateButtonProps)
       onClick={handleDonate}
       disabled={loading}
       className={`text-sm font-medium px-3 py-1.5 rounded-md transition-colors disabled:opacity-50 ${
-        type === 'craftsman'
+        type === 'craftsman' || type === 'instructor'
           ? 'bg-green-600 hover:bg-green-700 text-white text-xs'
           : 'text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'
       }`}
     >
-      {loading ? '...' : type === 'craftsman' ? '💚 تبرع' : '💬 تواصل مع الإدارة'}
+      {loading ? '...' : type === 'craftsman' || type === 'instructor' ? '💚 تبرع' : '💬 تواصل مع الإدارة'}
     </button>
   );
 }

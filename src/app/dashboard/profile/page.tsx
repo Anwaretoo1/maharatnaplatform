@@ -141,12 +141,12 @@ export default function ProfilePage() {
           <textarea
             rows={5}
             className="w-full px-3 py-2 border rounded-md dark:bg-neutral-800 dark:border-neutral-700"
-            placeholder={profile.role === 'craftsman' ? 'اكتب نبذة عن خبرتك وحرفتك...' : 'اكتب نبذة عن نفسك...'}
+            placeholder={profile.role === 'craftsman' ? 'اكتب نبذة عن خبرتك ومجالاتك...' : 'اكتب نبذة عن نفسك...'}
             value={profile.bio}
             onChange={(e) => setProfile(prev => ({ ...prev, bio: e.target.value }))}
           />
           <p className="text-xs text-gray-500 mt-1">
-            {profile.role === 'craftsman' ? 'ستظهر هذه النبذة في ملفك الشخصي العام وصفحة الحرفيين' : 'ستظهر هذه النبذة في ملفك الشخصي'}
+            {profile.role === 'craftsman' ? 'ستظهر هذه النبذة في ملفك الشخصي العام وصفحة المعلمين' : 'ستظهر هذه النبذة في ملفك الشخصي'}
           </p>
         </div>
 

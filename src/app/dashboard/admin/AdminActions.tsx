@@ -44,7 +44,7 @@ export function ChangeRoleButton({ userId, currentRole }: { userId: string; curr
 
   const roles = [
     { value: 'learner', label: 'متعلم', color: 'text-blue-600' },
-    { value: 'craftsman', label: 'حرفي', color: 'text-green-600' },
+    { value: 'craftsman', label: 'معلم', color: 'text-green-600' },
     { value: 'admin', label: 'مسؤول', color: 'text-red-600' },
   ];
 

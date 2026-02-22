@@ -24,6 +24,17 @@ export default async function Home() {
         <p className="text-base sm:text-xl md:text-2xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-10">
           نحفظ التراث ونبني المستقبل. منصة رائدة لتوثيق وتعليم الحرف التقليدية السورية ونقلها للأجيال القادمة.
         </p>
+        
+        {/* Quranic Verse */}
+        <div className="bg-gradient-to-r from-blue-500/10 to-blue-600/10 dark:from-blue-900/20 dark:to-blue-800/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-6 sm:p-8 mb-10 max-w-2xl mx-auto backdrop-blur-sm">
+          <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-blue-700 dark:text-blue-300 leading-relaxed" style={{ fontFamily: 'Georgia, serif' }}>
+            وَقُل رَّبِّ زِدْنِي عِلْماً
+          </p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-3">
+            سورة طه - الآية 114
+          </p>
+        </div>
+        
         <div className="flex flex-wrap justify-center gap-4">
           <Link
             href="/courses"

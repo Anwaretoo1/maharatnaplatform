@@ -199,7 +199,7 @@ export default function MessagesPage() {
   const getRoleBadge = (role: string) => {
     switch (role) {
       case 'admin': return <span className="px-1.5 py-0.5 text-xs bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded">مسؤول</span>;
-      case 'craftsman': return <span className="px-1.5 py-0.5 text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded">حرفي</span>;
+      case 'craftsman': return <span className="px-1.5 py-0.5 text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded">معلم</span>;
       default: return <span className="px-1.5 py-0.5 text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded">متعلم</span>;
     }
   };
@@ -286,7 +286,7 @@ export default function MessagesPage() {
                     </button>
                     <button type="button" onClick={() => { setBroadcastTarget('craftsmen'); setCompose(prev => ({ ...prev, receiverId: '' })); }}
                       className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${broadcastTarget === 'craftsmen' ? 'bg-green-500 text-white' : 'bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-300'}`}>
-                      🎨 جميع المعلمين
+                      � جميع المعلمين
                     </button>
                   </div>
                 </div>
@@ -305,7 +305,7 @@ export default function MessagesPage() {
                     <option value="">اختر المستلم</option>
                     {contacts.map((u) => (
                       <option key={u.id} value={u.id}>
-                        {u.name} ({u.email}) - {u.role === 'admin' ? 'مسؤول' : u.role === 'craftsman' ? 'حرفي' : 'متعلم'}
+                        {u.name} ({u.email}) - {u.role === 'admin' ? 'مسؤول' : u.role === 'craftsman' ? 'معلم' : 'متعلم'}
                       </option>
                     ))}
                   </select>

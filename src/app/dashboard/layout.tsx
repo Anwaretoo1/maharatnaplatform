@@ -24,8 +24,8 @@ export default async function DashboardLayout({
             📚 المتعلم
           </Link>
           {(user.role === 'craftsman' || user.role === 'admin') && (
-            <Link href="/dashboard/craftsman" className="flex-shrink-0 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-300 text-xs font-medium">
-              🎨 الحرفي
+            <Link href="/dashboard/instructor" className="flex-shrink-0 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-300 text-xs font-medium">
+              🎓 المعلم
             </Link>
           )}
           {user.role === 'admin' && (
@@ -57,8 +57,8 @@ export default async function DashboardLayout({
           </Link>
           
           {(user.role === 'craftsman' || user.role === 'admin') && (
-            <Link href="/dashboard/craftsman" className="block px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-700 dark:text-gray-300">
-              🎨 لوحة الحرفي
+            <Link href="/dashboard/instructor" className="block px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-700 dark:text-gray-300">
+              🎓 لوحة المعلم
             </Link>
           )}
           
