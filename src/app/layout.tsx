@@ -92,18 +92,18 @@ export default async function RootLayout({
                         <div className="bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl shadow-xl overflow-hidden">
                           {/* User info */}
                           <div className="px-4 py-3 bg-gray-50 dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-700">
-                            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">\u0645\u0631\u062d\u0628\u0627\u064b</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">مرحباً</p>
                             <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{user.name}</p>
                           </div>
                           <Link href="/dashboard/profile" className="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 font-semibold text-sm transition-colors">
-                            <span>\ud83d\udc64</span> \u0627\u0644\u0645\u0644\u0641 \u0627\u0644\u0634\u062e\u0635\u064a
+                            <span>👤</span> الملف الشخصي
                           </Link>
                           <Link href={user.role === 'admin' ? '/dashboard/admin' : user.role === 'craftsman' ? '/dashboard/instructor' : '/dashboard/learner'} className="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 font-semibold text-sm transition-colors border-t border-gray-100 dark:border-neutral-700">
-                            <span>\ud83d\udcca</span> \u0644\u0648\u062d\u0629 \u0627\u0644\u062a\u062d\u0643\u0645
+                            <span>📊</span> لوحة التحكم
                           </Link>
                           <form action="/api/logout" method="POST" className="border-t border-gray-200 dark:border-neutral-700">
                             <button type="submit" className="flex items-center gap-3 w-full text-right px-4 py-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-sm font-bold transition-colors">
-                              <span>\ud83d\udeaa</span> \u062e\u0631\u0648\u062c
+                              <span>🚪</span> خروج
                             </button>
                           </form>
                         </div>
