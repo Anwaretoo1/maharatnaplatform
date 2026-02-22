@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://maharat-syria.com';
+  const baseUrl = 'https://www.maharat-syria.com';
 
   return [
     {
