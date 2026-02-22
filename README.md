@@ -1,36 +1,154 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# منصة مهاراتنا - Maharatna Platform
 
-## Getting Started
+منصة تعليمية متقدمة لتوثيق ونقل الحرف التقليدية السورية
 
-First, run the development server:
+## 🌟 الميزات الرئيسية
+
+### ✅ المطبقة في الآونة الأخيرة
+- **نظام الخصومات** - خصومات عامة وخاصة بالدورات
+- **الرسائل الجماعية (Broadcast)** - إرسال لجميع/طلاب/معلمين
+- **إدارة الملف الشخصي** - صورة + نبذة شخصية
+- **رفع الصور والفيديو** - عبر Cloudinary
+- **نظام الدفع** - Stripe integration
+- **التبرعات** - تحويل آلي للرسائل مع الإدارة
+
+---
+
+## 🚀 البدء السريع
+
+### المتطلبات
+- Node.js 18+
+- MySQL/MariaDB
+- حساب Cloudinary
+- مفتاح Stripe (اختياري)
+
+### التثبيت
+
+```bash
+# انسخ المستودع
+git clone https://github.com/Anwaretoo1/maharatnaplatform.git
+cd maharatnaplatform
+
+# ثبت المكتبات
+npm install
+
+# أنشئ ملف .env (انسخ من .env.example)
+cp .env.example .env
+
+# وملأ البيانات المطلوبة في .env
+```
+
+### التطوير المحلي
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+ثم افتح http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📋 إعداد Vercel
 
-## Learn More
+⚠️ **مهم جداً**: بعد الدفع إلى GitHub، يجب إضافة متغيرات البيئة إلى Vercel
 
-To learn more about Next.js, take a look at the following resources:
+👉 اقرأ [VERCEL_SETUP.md](./VERCEL_SETUP.md) للتعليمات المفصلة
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### الخطوات السريعة:
+1. افتح https://vercel.com/dashboard
+2. Settings → Environment Variables
+3. أضف:
+   - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
+   - `DATABASE_URL`
+   - `JWT_SECRET`
+   - `STRIPE_SECRET_KEY` (إذا كنت تستخدم الدفع)
+4. انقر Redeploy
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 👥 الحسابات التجريبية
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| الدور | البريد | كلمة المرور |
+|------|-------|-----------|
+| مسؤول | admin@maharat-syria.com | admin123 |
+| معلم (مثال) | craftsman@example.com | password |
+| طالب (مثال) | learner@example.com | password |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## 📁 هيكل المشروع
+
+```
+src/
+├── app/
+│   ├── api/              # API routes
+│   │   ├── upload/       # رفع الملفات إلى Cloudinary
+│   │   ├── discounts/    # إدارة الخصومات
+│   │   ├── profile/      # الملف الشخصي
+│   │   ├── messages/     # الرسائل والبث الجماعي
+│   │   └── ...
+│   ├── dashboard/        # لوحة التحكم
+│   │   ├── admin/        # لوحة المسؤول
+│   │   ├── craftsman/    # لوحة المعلم
+│   │   ├── learner/      # صفحة الطالب
+│   │   └── profile/      # الملف الشخصي
+│   ├── courses/          # صفحات الدورات
+│   └── ...
+├── lib/
+│   ├── auth.ts          # المصادقة
+│   ├── cloudinary.ts    # Cloudinary client
+│   ├── prisma.ts        # Prisma ORM
+│   └── ...
+└── prisma/
+    └── schema.prisma    # نموذج قاعدة البيانات
+```
+
+---
+
+## 🔧 التكنولوجيات المستخدمة
+
+- **Frontend**: Next.js 16, React 19, Tailwind CSS
+- **Backend**: Node.js, Next.js API Routes
+- **Database**: MySQL (Railway)
+- **ORM**: Prisma
+- **Authentication**: JWT + Cookies
+- **File Upload**: Cloudinary
+- **Payment**: Stripe
+- **Email**: SendGrid SMTP
+
+---
+
+## 📖 وثائق إضافية
+
+- [VERCEL_SETUP.md](./VERCEL_SETUP.md) - إعداد متغيرات Vercel
+- [deployment_instructions.md](./deployment_instructions.md) - تعليمات النشر
+- [Prisma Schema](./prisma/schema.prisma) - نموذج البيانات
+
+---
+
+## 🐛 استكشاف الأخطاء
+
+### مشكلة: فشل رفع الصور
+**السبب**: متغيرات Cloudinary غير مضافة إلى Vercel
+**الحل**: اقرأ [VERCEL_SETUP.md](./VERCEL_SETUP.md)
+
+### مشكلة: خطأ قاعدة البيانات  
+**السبب**: `DATABASE_URL` غير صحيح أو غير موجود
+**الحل**: تحقق من `.env` و Vercel Environment Variables
+
+### مشكلة: Stripe لا يعمل
+**السبب**: مفاتيح Stripe غير مضافة
+**الحل**: أضف `STRIPE_SECRET_KEY` و `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+
+---
+
+## 📞 الدعم والمساعدة
+
+للمزيد من الأسئلة، راجع:
+- [VERCEL_SETUP.md](./VERCEL_SETUP.md)
+- [deployment_instructions.md](./deployment_instructions.md)
+- GitHub Issues
+
+---
+
+© 2026 منصة مهاراتنا - جميع الحقوق محفوظة
