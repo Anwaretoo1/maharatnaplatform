@@ -11,8 +11,25 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "منصة مهاراتنا - تحويل المهارات التقليدية إلى محتوى رقمي",
-  description: "منصة لتحويل المهارات التقليدية السورية إلى محتوى رقمي وتعليمي",
+  description: "منصة مهاراتنا تُحوّل المهارات التقليدية السورية إلى دورات تعليمية رقمية. تعلّم الحرف اليدوية، الطهي، النسيج، والفنون التراثية من أمهر الحرفيين السوريين.",
+  keywords: ["مهاراتنا", "دورات تعليمية", "حرف يدوية", "تراث سوري", "تعلم أونلاين", "مهارات", "سوريا"],
+  authors: [{ name: "منصة مهاراتنا" }],
+  creator: "منصة مهاراتنا",
+  metadataBase: new URL("https://maharat-syria.com"),
   manifest: "/manifest.json",
+  openGraph: {
+    title: "منصة مهاراتنا - تحويل المهارات التقليدية إلى محتوى رقمي",
+    description: "تعلّم الحرف التقليدية السورية من أمهر الحرفيين عبر دورات تعليمية رقمية.",
+    url: "https://maharat-syria.com",
+    siteName: "مهاراتنا",
+    locale: "ar_SY",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "منصة مهاراتنا",
+    description: "تعلّم الحرف التقليدية السورية أونلاين",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
