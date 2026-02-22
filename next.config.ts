@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 
+// Vercel rebuild trigger - All features: discounts, broadcast, profile, donations
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
