@@ -65,13 +65,13 @@ export default async function RootLayout({
               <div className="hidden sm:flex sm:items-center sm:gap-8">
                 <Link 
                   href="/" 
-                  className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors"
+                  className="text-gray-800 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 font-bold transition-colors text-base"
                 >
                   الرئيسية
                 </Link>
                 <Link 
                   href="/courses" 
-                  className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors"
+                  className="text-gray-800 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 font-bold transition-colors text-base"
                 >
                   الدورات
                 </Link>
@@ -82,17 +82,31 @@ export default async function RootLayout({
                 {user ? (
                   <>
                     <NotificationBell />
-                    <div className="h-10 w-10 sm:h-12 sm:w-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full text-white flex items-center justify-center font-bold text-sm sm:text-base cursor-pointer group relative">
-                      {user.name?.charAt(0)}
-                      <div className="absolute top-full mt-2 right-0 bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto min-w-max">
-                        <Link href="/dashboard/learner" className="block px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-neutral-700 text-sm">
-                          لوحة التحكم
-                        </Link>
-                        <form action="/api/logout" method="POST" className="border-t border-gray-200 dark:border-neutral-700">
-                          <button type="submit" className="block w-full text-right px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 text-sm font-medium rounded-b-lg">
-                            خروج
-                          </button>
-                        </form>
+                    {/* Avatar + Dropdown — uses padding bridge so mouse doesn't leave group */}
+                    <div className="relative group">
+                      <div className="h-10 w-10 sm:h-12 sm:w-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full text-white flex items-center justify-center font-bold text-sm sm:text-base cursor-pointer select-none ring-2 ring-blue-300 dark:ring-blue-700">
+                        {user.name?.charAt(0)?.toUpperCase()}
+                      </div>
+                      {/* Invisible bridge prevents gap between avatar and menu */}
+                      <div className="absolute top-full right-0 pt-2 hidden group-hover:block z-50 min-w-[180px]">
+                        <div className="bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl shadow-xl overflow-hidden">
+                          {/* User info */}
+                          <div className="px-4 py-3 bg-gray-50 dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-700">
+                            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">\u0645\u0631\u062d\u0628\u0627\u064b</p>
+                            <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{user.name}</p>
+                          </div>
+                          <Link href="/dashboard/profile" className="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 font-semibold text-sm transition-colors">
+                            <span>\ud83d\udc64</span> \u0627\u0644\u0645\u0644\u0641 \u0627\u0644\u0634\u062e\u0635\u064a
+                          </Link>
+                          <Link href={user.role === 'admin' ? '/dashboard/admin' : user.role === 'craftsman' ? '/dashboard/instructor' : '/dashboard/learner'} className="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 font-semibold text-sm transition-colors border-t border-gray-100 dark:border-neutral-700">
+                            <span>\ud83d\udcca</span> \u0644\u0648\u062d\u0629 \u0627\u0644\u062a\u062d\u0643\u0645
+                          </Link>
+                          <form action="/api/logout" method="POST" className="border-t border-gray-200 dark:border-neutral-700">
+                            <button type="submit" className="flex items-center gap-3 w-full text-right px-4 py-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-sm font-bold transition-colors">
+                              <span>\ud83d\udeaa</span> \u062e\u0631\u0648\u062c
+                            </button>
+                          </form>
+                        </div>
                       </div>
                     </div>
                   </>
@@ -100,13 +114,13 @@ export default async function RootLayout({
                   <>
                     <Link 
                       href="/login" 
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all hover:shadow-md"
+                      className="btn btn-primary btn-sm"
                     >
                       دخول
                     </Link>
                     <Link 
                       href="/register" 
-                      className="hidden sm:block border-2 border-blue-600 text-blue-600 hover:bg-blue-50 dark:border-blue-500 dark:text-blue-400 dark:hover:bg-blue-900/20 px-5 py-2 rounded-lg text-sm font-medium transition-all"
+                      className="hidden sm:inline-flex btn btn-secondary btn-sm"
                     >
                       حساب جديد
                     </Link>

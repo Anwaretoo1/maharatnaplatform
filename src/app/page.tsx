@@ -38,13 +38,13 @@ export default async function Home() {
         <div className="flex flex-wrap justify-center gap-4">
           <Link
             href="/courses"
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full text-lg transition-transform hover:scale-105"
+            className="btn btn-primary text-base sm:text-lg px-8 py-3 rounded-full"
           >
             تصفح الدورات
           </Link>
           <Link
             href="/register"
-            className="bg-white hover:bg-gray-50 text-blue-600 border border-blue-600 font-bold py-3 px-8 rounded-full text-lg transition-transform hover:scale-105 dark:bg-transparent dark:text-white dark:border-white dark:hover:bg-white/10"
+            className="btn btn-secondary text-base sm:text-lg px-8 py-3 rounded-full"
           >
             انضم إلينا
           </Link>

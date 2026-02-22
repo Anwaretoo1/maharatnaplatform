@@ -41,14 +41,27 @@ body {
   transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
-/* Links */
-a {
+/* Links - only unclassed anchors */
+a:not([class]) {
   color: var(--primary);
   text-decoration: none;
 }
 
-a:hover {
+a:not([class]):hover {
   text-decoration: underline;
+}
+
+/* Global font weight boost */
+body {
+  font-weight: 450;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+}
+
+p, span, li, td, th, label {
+  font-weight: 450;
 }
 
 /* Animations */
