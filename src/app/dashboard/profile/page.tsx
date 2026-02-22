@@ -99,14 +99,14 @@ export default function ProfilePage() {
               </div>
             )}
           </div>
-          <label className="cursor-pointer">
+          <label className="cursor-pointer block">
             <span className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-1.5 px-4 rounded-md transition-colors inline-block">
               {uploading ? 'جاري الرفع...' : '📷 تغيير الصورة'}
             </span>
             <input
               type="file"
-              accept="image/*"
-              className="hidden"
+              accept="image/*,image/jpeg,image/png,image/heic,image/webp"
+              style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0, overflow: 'hidden' }}
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) handleImageUpload(file);

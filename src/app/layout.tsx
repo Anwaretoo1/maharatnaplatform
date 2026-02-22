@@ -6,6 +6,7 @@ import { getSession } from "@/lib/auth";
 import OnlineTracker from "./components/OnlineTracker";
 import NotificationBell from "./components/NotificationBell";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
+import MobileUserMenu from "./components/MobileUserMenu";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -163,23 +164,25 @@ export default async function RootLayout({
                   <span className="text-xl">📚</span>
                   الدورات
                 </Link>
-                {user && (
-                  <Link 
-                    href="/dashboard/learner" 
-                    className="flex flex-col items-center gap-1 py-2 px-3 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 text-[11px] font-medium transition-colors"
-                  >
-                    <span className="text-xl">📋</span>
-                    لوحتي
-                  </Link>
-                )}
-                {!user && (
-                  <Link 
-                    href="/register" 
-                    className="flex flex-col items-center gap-1 py-2 px-3 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 text-[11px] font-medium transition-colors"
-                  >
-                    <span className="text-xl">➕</span>
-                    اشتراك
-                  </Link>
+                {user ? (
+                  <MobileUserMenu user={{ name: user.name, role: user.role }} />
+                ) : (
+                  <>
+                    <Link 
+                      href="/login" 
+                      className="flex flex-col items-center gap-1 py-2 px-3 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 text-[11px] font-medium transition-colors"
+                    >
+                      <span className="text-xl">🔑</span>
+                      دخول
+                    </Link>
+                    <Link 
+                      href="/register" 
+                      className="flex flex-col items-center gap-1 py-2 px-3 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 text-[11px] font-medium transition-colors"
+                    >
+                      <span className="text-xl">➕</span>
+                      اشتراك
+                    </Link>
+                  </>
                 )}
               </div>
             </div>
@@ -257,20 +260,20 @@ export default async function RootLayout({
                 <h4 className="font-bold text-gray-900 dark:text-white mb-4 text-sm">قانوني</h4>
                 <ul className="space-y-3 text-sm">
                   <li>
-                    <a 
-                      href="#" 
+                    <Link 
+                      href="/privacy" 
                       className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                     >
                       سياسة الخصوصية
-                    </a>
+                    </Link>
                   </li>
                   <li>
-                    <a 
-                      href="#" 
+                    <Link 
+                      href="/terms" 
                       className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                     >
                       شروط الخدمة
-                    </a>
+                    </Link>
                   </li>
                 </ul>
               </div>

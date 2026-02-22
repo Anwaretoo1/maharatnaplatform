@@ -46,6 +46,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(data.email)) {
+      return NextResponse.json(
+        { error: 'صيغة البريد الإلكتروني غير صحيحة. مثال: name@example.com' },
+        { status: 400 }
+      );
+    }
+
+    // Validate password length
+    if (data.password.length < 6) {
+      return NextResponse.json(
+        { error: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' },
+        { status: 400 }
+      );
+    }
+
     const hashedPassword = await bcrypt.hash(data.password, 10);
     
     // Create new user
