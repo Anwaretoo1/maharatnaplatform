@@ -47,81 +47,110 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       </head>
       <body className={inter.className}>
-        <nav className="bg-white border-b border-gray-200 dark:bg-neutral-900 dark:border-neutral-800 sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-            <div className="flex justify-between h-14 sm:h-16">
-              <div className="flex items-center">
-                <Link href="/" className="flex-shrink-0 flex items-center font-bold text-lg sm:text-xl text-blue-600">
-                  مهاراتنا
+        {/* Modern Navigation */}
+        <nav className="bg-white dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-800 sticky top-0 z-50 shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16 sm:h-20">
+              {/* Logo */}
+              <div className="flex-shrink-0">
+                <Link href="/" className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-blue-600 hover:text-blue-700 transition-colors">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center text-white text-lg sm:text-xl">
+                    📚
+                  </div>
+                  <span className="hidden sm:inline">مهاراتنا</span>
                 </Link>
-                <div className="hidden sm:mr-6 sm:flex sm:space-x-8 sm:space-x-reverse">
-                  <Link href="/courses" className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                    الدورات
-                  </Link>
-                  <Link href="/craftsmen" className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                    الحرفيون
-                  </Link>
-                  <Link href="/donations" className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                    تبرع
-                  </Link>
-                </div>
               </div>
-              <div className="flex items-center gap-1 sm:gap-3">
+
+              {/* Desktop Navigation */}
+              <div className="hidden sm:flex sm:items-center sm:gap-8">
+                <Link 
+                  href="/" 
+                  className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors"
+                >
+                  الرئيسية
+                </Link>
+                <Link 
+                  href="/courses" 
+                  className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors"
+                >
+                  الدورات
+                </Link>
+              </div>
+
+              {/* User Actions */}
+              <div className="flex items-center gap-2 sm:gap-4">
                 {user ? (
                   <>
                     <NotificationBell />
-                    <Link href="/dashboard/learner" className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white text-xs sm:text-sm font-medium hidden sm:inline">
-                      لوحة التحكم
-                    </Link>
-                    <Link href="/dashboard/learner" className="sm:hidden p-1.5 text-gray-600 dark:text-gray-300" title="لوحة التحكم">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
-                    </Link>
-                    <div className="flex items-center gap-1 sm:gap-2 bg-gray-100 dark:bg-neutral-800 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full">
-                      <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">
-                        {user.name?.charAt(0)}
+                    <div className="h-10 w-10 sm:h-12 sm:w-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full text-white flex items-center justify-center font-bold text-sm sm:text-base cursor-pointer group relative">
+                      {user.name?.charAt(0)}
+                      <div className="absolute top-full mt-2 right-0 bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto min-w-max">
+                        <Link href="/dashboard/learner" className="block px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-neutral-700 text-sm">
+                          لوحة التحكم
+                        </Link>
+                        <form action="/api/logout" method="POST" className="border-t border-gray-200 dark:border-neutral-700">
+                          <button type="submit" className="block w-full text-right px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 text-sm font-medium rounded-b-lg">
+                            خروج
+                          </button>
+                        </form>
                       </div>
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 hidden sm:inline">{user.name}</span>
                     </div>
-                    <form action="/api/logout" method="POST">
-                      <button type="submit" className="text-red-500 hover:text-red-700 text-xs sm:text-sm font-medium">
-                        خروج
-                      </button>
-                    </form>
                   </>
                 ) : (
                   <>
-                    <Link href="/login" className="bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium">
+                    <Link 
+                      href="/login" 
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all hover:shadow-md"
+                    >
                       دخول
                     </Link>
-                    <Link href="/register" className="border border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 px-3 sm:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium hidden sm:inline">
+                    <Link 
+                      href="/register" 
+                      className="hidden sm:block border-2 border-blue-600 text-blue-600 hover:bg-blue-50 dark:border-blue-500 dark:text-blue-400 dark:hover:bg-blue-900/20 px-5 py-2 rounded-lg text-sm font-medium transition-all"
+                    >
                       حساب جديد
                     </Link>
                   </>
                 )}
               </div>
             </div>
-          </div>
-          {/* Mobile bottom nav for logged in users */}
-          <div className="sm:hidden border-t border-gray-100 dark:border-neutral-800">
-            <div className="flex justify-around py-1">
-              <Link href="/courses" className="flex flex-col items-center py-1 px-2 text-gray-500 hover:text-blue-600 text-[10px]">
-                <span className="text-lg">📚</span>
-                الدورات
-              </Link>
-              <Link href="/craftsmen" className="flex flex-col items-center py-1 px-2 text-gray-500 hover:text-blue-600 text-[10px]">
-                <span className="text-lg">👨‍🎨</span>
-                الحرفيون
-              </Link>
-              <Link href="/donations" className="flex flex-col items-center py-1 px-2 text-gray-500 hover:text-blue-600 text-[10px]">
-                <span className="text-lg">💰</span>
-                تبرع
-              </Link>
-              {user && (
-                <Link href="/dashboard/learner" className="flex flex-col items-center py-1 px-2 text-gray-500 hover:text-blue-600 text-[10px]">
-                  <span className="text-lg">📋</span>
-                  لوحتي
+
+            {/* Mobile Navigation */}
+            <div className="sm:hidden border-t border-gray-200 dark:border-neutral-800">
+              <div className="flex justify-around py-2">
+                <Link 
+                  href="/" 
+                  className="flex flex-col items-center gap-1 py-2 px-3 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 text-[11px] font-medium transition-colors"
+                >
+                  <span className="text-xl">🏠</span>
+                  الرئيسية
                 </Link>
-              )}
+                <Link 
+                  href="/courses" 
+                  className="flex flex-col items-center gap-1 py-2 px-3 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 text-[11px] font-medium transition-colors"
+                >
+                  <span className="text-xl">📚</span>
+                  الدورات
+                </Link>
+                {user && (
+                  <Link 
+                    href="/dashboard/learner" 
+                    className="flex flex-col items-center gap-1 py-2 px-3 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 text-[11px] font-medium transition-colors"
+                  >
+                    <span className="text-xl">📋</span>
+                    لوحتي
+                  </Link>
+                )}
+                {!user && (
+                  <Link 
+                    href="/register" 
+                    className="flex flex-col items-center gap-1 py-2 px-3 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 text-[11px] font-medium transition-colors"
+                  >
+                    <span className="text-xl">➕</span>
+                    اشتراك
+                  </Link>
+                )}
+              </div>
             </div>
           </div>
         </nav>
