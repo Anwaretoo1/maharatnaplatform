@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Cairo } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
@@ -7,8 +7,9 @@ import OnlineTracker from "./components/OnlineTracker";
 import NotificationBell from "./components/NotificationBell";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
 import MobileUserMenu from "./components/MobileUserMenu";
+import { BookOpen, Home, GraduationCap, User, LayoutDashboard, LogOut } from "lucide-react";
 
-const inter = Inter({ subsets: ["latin"] });
+const cairo = Cairo({ subsets: ["arabic", "latin"], weight: ["400", "600", "700", "800"] });
 
 export const metadata: Metadata = {
   title: "منصة مهاراتنا - تحويل المهارات التقليدية إلى محتوى رقمي",
@@ -46,7 +47,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#2563eb",
+  themeColor: "#0056B3",
 };
 
 export default async function RootLayout({
@@ -96,40 +97,31 @@ export default async function RootLayout({
           }}
         />
       </head>
-      <body className={inter.className}>
+      <body className={cairo.className}>
         {/* Modern Navigation */}
-        <nav className="bg-white dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-800 sticky top-0 z-50 shadow-sm">
+        <nav className="bg-white/85 dark:bg-neutral-900/90 backdrop-blur-xl border-b border-blue-100/60 dark:border-neutral-800 sticky top-0 z-50 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16 sm:h-20">
               {/* Logo */}
               <div className="flex-shrink-0">
-                <Link href="/" className="flex items-center gap-2 font-bold text-xl sm:text-2xl text-blue-600 hover:text-blue-700 transition-colors">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center text-white text-lg sm:text-xl">
-                    📚
+                <Link href="/" className="flex items-center gap-2.5 font-extrabold text-xl sm:text-2xl hover:opacity-90 transition-opacity">
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center text-white shadow-md" style={{background:"var(--grad-primary)"}}>
+                    <BookOpen size={20} strokeWidth={2.5} />
                   </div>
-                  <span className="hidden sm:inline">مهاراتنا</span>
+                  <span className="hidden sm:inline" style={{background:"var(--grad-primary)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>مهاراتنا</span>
                 </Link>
               </div>
 
               {/* Desktop Navigation */}
-              <div className="hidden sm:flex sm:items-center sm:gap-8">
-                <Link 
-                  href="/" 
-                  className="text-gray-800 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 font-bold transition-colors text-base"
-                >
-                  الرئيسية
+              <div className="hidden sm:flex sm:items-center sm:gap-1">
+                <Link href="/" className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-gray-700 dark:text-gray-200 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-semibold transition-all text-sm">
+                  <Home size={15} /> الرئيسية
                 </Link>
-                <Link 
-                  href="/courses" 
-                  className="text-gray-800 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 font-bold transition-colors text-base"
-                >
-                  الدورات
+                <Link href="/courses" className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-gray-700 dark:text-gray-200 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-semibold transition-all text-sm">
+                  <BookOpen size={15} /> الدورات
                 </Link>
-                <Link 
-                  href="/teach" 
-                  className="text-gray-800 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 font-bold transition-colors text-base"
-                >
-                  علّم واكسب
+                <Link href="/teach" className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-gray-700 dark:text-gray-200 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-semibold transition-all text-sm">
+                  <GraduationCap size={15} /> علّم واكسب
                 </Link>
               </div>
 
@@ -152,14 +144,14 @@ export default async function RootLayout({
                             <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{user.name}</p>
                           </div>
                           <Link href="/dashboard/profile" className="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 font-semibold text-sm transition-colors">
-                            <span>👤</span> الملف الشخصي
+                            <User size={15} /> الملف الشخصي
                           </Link>
                           <Link href={user.role === 'admin' ? '/dashboard/admin' : user.role === 'craftsman' ? '/dashboard/instructor' : '/dashboard/learner'} className="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 font-semibold text-sm transition-colors border-t border-gray-100 dark:border-neutral-700">
-                            <span>📊</span> لوحة التحكم
+                            <LayoutDashboard size={15} /> لوحة التحكم
                           </Link>
                           <form action="/api/logout" method="POST" className="border-t border-gray-200 dark:border-neutral-700">
                             <button type="submit" className="flex items-center gap-3 w-full text-right px-4 py-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-sm font-bold transition-colors">
-                              <span>🚪</span> خروج
+                              <LogOut size={15} /> خروج
                             </button>
                           </form>
                         </div>
