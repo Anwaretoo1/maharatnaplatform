@@ -42,7 +42,26 @@ function parseVttTime(timeStr: string): number {
     const [s, ms] = sMs.split('.');
     return parseInt(h) * 3600 + parseInt(m) * 60 + parseInt(s) + (parseInt(ms || '0') / 1000);
   }
+  if (parts.length === 2) {
+    const [m, sMs] = parts;
+    const [s, ms] = sMs.split('.');
+    return parseInt(m) * 60 + parseInt(s) + (parseInt(ms || '0') / 1000);
+  }
   return 0;
+}
+
+// Extract YouTube video ID from embed URL
+function getYouTubeVideoId(url: string): string | null {
+  const match = url.match(/(?:youtube\.com\/embed\/|youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return match ? match[1] : null;
+}
+
+// Declare YouTube IFrame API types
+declare global {
+  interface Window {
+    YT: any;
+    onYouTubeIframeAPIReady: () => void;
+  }
 }
 
 export default function VideoPlayer({ course, initialProgress }: { course: any, initialProgress: any[], userId?: string }) {
@@ -54,27 +73,56 @@ export default function VideoPlayer({ course, initialProgress }: { course: any, 
   const [currentSubtitle, setCurrentSubtitle] = useState('');
   const [showSubtitles, setShowSubtitles] = useState(true);
   const [videoTime, setVideoTime] = useState(0);
-  const subtitleTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [subtitleDebug, setSubtitleDebug] = useState('');
+
+  // YouTube Player refs
+  const playerContainerRef = useRef<HTMLDivElement>(null);
+  const ytPlayerRef = useRef<any>(null);
+  const timeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const ytApiLoadedRef = useRef(false);
+
+  // Load YouTube IFrame API script once
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.YT && window.YT.Player) {
+      ytApiLoadedRef.current = true;
+      return;
+    }
+
+    // Check if script is already being loaded
+    if (document.querySelector('script[src*="youtube.com/iframe_api"]')) return;
+
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    document.head.appendChild(tag);
+
+    window.onYouTubeIframeAPIReady = () => {
+      ytApiLoadedRef.current = true;
+    };
+  }, []);
 
   // Load subtitles when active content changes
   useEffect(() => {
     setSubtitles([]);
     setCurrentSubtitle('');
+    setSubtitleDebug('');
 
     if (activeContent?.subtitlesVtt) {
-      // Subtitles are inline (passed from server)
       const cues = parseVtt(activeContent.subtitlesVtt);
       setSubtitles(cues);
+      setSubtitleDebug(`تم تحميل ${cues.length} مقطع ترجمة`);
     } else if (activeContent?.id) {
-      // Try to fetch from API
       fetch(`/api/subtitles?contentId=${activeContent.id}`)
         .then(res => {
           if (res.ok) return res.text();
           return null;
         })
         .then(vtt => {
-          if (vtt) setSubtitles(parseVtt(vtt));
+          if (vtt && vtt.startsWith('WEBVTT')) {
+            const cues = parseVtt(vtt);
+            setSubtitles(cues);
+            setSubtitleDebug(`تم تحميل ${cues.length} مقطع ترجمة من API`);
+          }
         })
         .catch(() => {});
     }
@@ -86,48 +134,90 @@ export default function VideoPlayer({ course, initialProgress }: { course: any, 
       setCurrentSubtitle('');
       return;
     }
-
     const cue = subtitles.find(c => videoTime >= c.start && videoTime <= c.end);
     setCurrentSubtitle(cue?.text || '');
   }, [videoTime, subtitles]);
 
-  // YouTube iframe API integration for subtitle sync
-  useEffect(() => {
-    if (subtitles.length === 0) return;
+  // Create/recreate YouTube player when content changes
+  const initYouTubePlayer = useCallback((videoId: string) => {
+    // Clean up previous player
+    if (ytPlayerRef.current) {
+      try { ytPlayerRef.current.destroy(); } catch {}
+      ytPlayerRef.current = null;
+    }
+    if (timeIntervalRef.current) {
+      clearInterval(timeIntervalRef.current);
+      timeIntervalRef.current = null;
+    }
 
-    // For YouTube embeds, we use postMessage to get current time
-    const isYouTube = activeContent?.content?.includes('youtube.com') || activeContent?.content?.includes('youtu.be');
-    if (!isYouTube) return;
+    const createPlayer = () => {
+      if (!playerContainerRef.current || !window.YT?.Player) return;
 
-    // Listen for YouTube player state messages
-    const handleMessage = (event: MessageEvent) => {
-      try {
-        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-        if (data.event === 'infoDelivery' && data.info?.currentTime !== undefined) {
-          setVideoTime(data.info.currentTime);
+      // Create a div for the player
+      const playerDiv = document.createElement('div');
+      playerDiv.id = 'yt-player-' + videoId;
+      playerContainerRef.current.innerHTML = '';
+      playerContainerRef.current.appendChild(playerDiv);
+
+      ytPlayerRef.current = new window.YT.Player(playerDiv.id, {
+        videoId,
+        width: '100%',
+        height: '100%',
+        playerVars: {
+          autoplay: 0,
+          modestbranding: 1,
+          rel: 0,
+          cc_load_policy: 0, // Don't show YouTube's own captions
+          hl: 'ar',
+        },
+        events: {
+          onReady: () => {
+            // Start polling current time
+            timeIntervalRef.current = setInterval(() => {
+              if (ytPlayerRef.current?.getCurrentTime) {
+                const t = ytPlayerRef.current.getCurrentTime();
+                setVideoTime(t);
+              }
+            }, 200);
+          },
+          onStateChange: (event: any) => {
+            // When playing, ensure time polling is active
+            if (event.data === 1 && !timeIntervalRef.current) {
+              timeIntervalRef.current = setInterval(() => {
+                if (ytPlayerRef.current?.getCurrentTime) {
+                  setVideoTime(ytPlayerRef.current.getCurrentTime());
+                }
+              }, 200);
+            }
+          },
+        },
+      });
+    };
+
+    // Wait for API to be ready
+    if (window.YT?.Player) {
+      createPlayer();
+    } else {
+      const checkInterval = setInterval(() => {
+        if (window.YT?.Player) {
+          clearInterval(checkInterval);
+          createPlayer();
         }
-      } catch {
-        // Not a YouTube message
-      }
-    };
+      }, 100);
+      // Timeout after 10 seconds
+      setTimeout(() => clearInterval(checkInterval), 10000);
+    }
+  }, []);
 
-    window.addEventListener('message', handleMessage);
-
-    // Request time updates from YouTube iframe
-    const interval = setInterval(() => {
-      if (iframeRef.current?.contentWindow) {
-        iframeRef.current.contentWindow.postMessage(
-          JSON.stringify({ event: 'listening' }),
-          '*'
-        );
-      }
-    }, 250);
-
+  // Cleanup on unmount
+  useEffect(() => {
     return () => {
-      window.removeEventListener('message', handleMessage);
-      clearInterval(interval);
+      if (timeIntervalRef.current) clearInterval(timeIntervalRef.current);
+      if (ytPlayerRef.current) {
+        try { ytPlayerRef.current.destroy(); } catch {}
+      }
     };
-  }, [subtitles, activeContent]);
+  }, []);
 
   const handleMarkComplete = async (contentId: string) => {
     try {
@@ -145,7 +235,6 @@ export default function VideoPlayer({ course, initialProgress }: { course: any, 
     }
   };
 
-  // تحويل الروابط للعرض المباشر
   const getContentUrl = (content: any) => {
     return getDisplayUrl(content.content, content.type);
   };
@@ -155,29 +244,25 @@ export default function VideoPlayer({ course, initialProgress }: { course: any, 
 
     const url = getContentUrl(activeContent);
     const hasSubtitles = subtitles.length > 0;
+    const isYouTubeEmbed = activeContent.content?.includes('youtube.com/embed') || activeContent.content?.includes('youtube.com') || activeContent.content?.includes('youtu.be');
+    const youtubeVideoId = isYouTubeEmbed ? getYouTubeVideoId(activeContent.content) : null;
 
     if (activeContent.type === 'video') {
-      // Google Drive أو YouTube - استخدام iframe
-      if (isDriveUrl(activeContent.content) || activeContent.content.includes('youtube.com') || activeContent.content.includes('youtu.be')) {
-        // Add enablejsapi for YouTube to allow subtitle sync
-        const embedUrl = activeContent.content.includes('youtube.com/embed')
-          ? `${url}${url.includes('?') ? '&' : '?'}enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`
-          : url;
-
+      // YouTube video - use IFrame Player API for proper time sync
+      if (youtubeVideoId) {
         return (
           <div className="relative w-full h-full">
-            <iframe
-              ref={iframeRef}
-              src={embedUrl}
+            <div
+              ref={playerContainerRef}
               className="w-full h-full"
-              allowFullScreen
-              allow="autoplay; encrypted-media"
-              title={activeContent.title}
+              key={youtubeVideoId}
             />
+            {/* Initialize player */}
+            <PlayerInitializer videoId={youtubeVideoId} onInit={initYouTubePlayer} />
             {/* Arabic subtitle overlay */}
             {hasSubtitles && showSubtitles && currentSubtitle && (
-              <div className="absolute bottom-8 left-0 right-0 flex justify-center pointer-events-none px-4">
-                <div className="bg-black/80 text-white text-lg md:text-xl px-6 py-3 rounded-lg max-w-[90%] text-center leading-relaxed font-medium" dir="rtl">
+              <div className="absolute bottom-12 left-0 right-0 flex justify-center pointer-events-none px-4 z-10">
+                <div className="bg-black/85 text-white text-base md:text-lg px-5 py-2.5 rounded-lg max-w-[90%] text-center leading-relaxed font-medium shadow-lg" dir="rtl">
                   {currentSubtitle}
                 </div>
               </div>
@@ -185,7 +270,21 @@ export default function VideoPlayer({ course, initialProgress }: { course: any, 
           </div>
         );
       }
-      // فيديو مباشر (رابط mp4 مثلاً)
+
+      // Google Drive - use iframe
+      if (isDriveUrl(activeContent.content)) {
+        return (
+          <iframe
+            src={url}
+            className="w-full h-full"
+            allowFullScreen
+            allow="autoplay; encrypted-media"
+            title={activeContent.title}
+          />
+        );
+      }
+
+      // Direct video (mp4, etc.)
       return (
         <div className="relative w-full h-full">
           <video
@@ -195,7 +294,6 @@ export default function VideoPlayer({ course, initialProgress }: { course: any, 
             onTimeUpdate={(e) => setVideoTime((e.target as HTMLVideoElement).currentTime)}
           >
             <source src={url} />
-            {/* Add VTT track if available */}
             {hasSubtitles && (
               <track
                 kind="subtitles"
@@ -207,10 +305,9 @@ export default function VideoPlayer({ course, initialProgress }: { course: any, 
             )}
             المتصفح لا يدعم تشغيل الفيديو
           </video>
-          {/* Fallback subtitle overlay for direct videos */}
           {hasSubtitles && showSubtitles && currentSubtitle && (
             <div className="absolute bottom-12 left-0 right-0 flex justify-center pointer-events-none px-4">
-              <div className="bg-black/80 text-white text-lg md:text-xl px-6 py-3 rounded-lg max-w-[90%] text-center leading-relaxed font-medium" dir="rtl">
+              <div className="bg-black/85 text-white text-base md:text-lg px-5 py-2.5 rounded-lg max-w-[90%] text-center leading-relaxed font-medium shadow-lg" dir="rtl">
                 {currentSubtitle}
               </div>
             </div>
@@ -223,7 +320,6 @@ export default function VideoPlayer({ course, initialProgress }: { course: any, 
       return <img src={url} alt={activeContent.title} className="max-h-full max-w-full object-contain" />;
     }
 
-    // نص
     return (
       <div className="p-8 text-white overflow-auto h-full w-full">
         <h2 className="text-2xl font-bold mb-4">{activeContent.title}</h2>
@@ -253,7 +349,6 @@ export default function VideoPlayer({ course, initialProgress }: { course: any, 
             </div>
           </div>
           <div className="flex items-center gap-3">
-            {/* Toggle subtitles button */}
             {hasSubtitlesForCurrent && (
               <button
                 onClick={() => setShowSubtitles(!showSubtitles)}
@@ -338,4 +433,19 @@ export default function VideoPlayer({ course, initialProgress }: { course: any, 
       </div>
     </div>
   );
+}
+
+// Small helper component to trigger player initialization
+function PlayerInitializer({ videoId, onInit }: { videoId: string; onInit: (id: string) => void }) {
+  const initialized = useRef(false);
+
+  useEffect(() => {
+    if (!initialized.current) {
+      initialized.current = true;
+      onInit(videoId);
+    }
+    return () => { initialized.current = false; };
+  }, [videoId, onInit]);
+
+  return null;
 }

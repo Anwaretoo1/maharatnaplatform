@@ -135,7 +135,7 @@ async function handleYouTubeImport(url: string, category: string | undefined, us
         subtitlesVtt = translatedCaptionsToVtt(translatedCaps);
       }
 
-      await prisma.courseContent.create({
+      const created = await prisma.courseContent.create({
         data: {
           courseId: course.id,
           title: arabicTitle,
@@ -150,6 +150,7 @@ async function handleYouTubeImport(url: string, category: string | undefined, us
 
       results.push({
         videoId: video.videoId,
+        contentId: created.id,
         originalTitle: video.title,
         arabicTitle,
         hasSubtitles: !!subtitlesVtt,
@@ -222,7 +223,7 @@ async function handleGenericImport(urls: string[], sourceUrl: string, category: 
         }
       }
 
-      await prisma.courseContent.create({
+      const created = await prisma.courseContent.create({
         data: {
           courseId: course.id,
           title: arabicTitle,
@@ -237,6 +238,7 @@ async function handleGenericImport(urls: string[], sourceUrl: string, category: 
 
       results.push({
         videoId: video.videoId,
+        contentId: created.id,
         originalTitle: video.title,
         arabicTitle,
         hasSubtitles: !!subtitlesVtt,
