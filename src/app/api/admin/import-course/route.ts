@@ -13,6 +13,7 @@ import {
   detectPlatform,
   processVideoUrls,
 } from '@/lib/platforms';
+import { transcribeYouTubeVideo } from '@/lib/transcribe';
 import {
   translateCourseMetadata,
   translateVideoTitle,
@@ -123,16 +124,36 @@ async function handleYouTubeImport(url: string, category: string | undefined, us
   });
 
   // Process each video
+  // Process each video with 3-level caption fallback
   const results = [];
   for (let i = 0; i < videos.length; i++) {
     const video = videos[i];
     try {
+      console.log(`[Import] Processing video ${i + 1}/${videos.length}: ${video.videoId} - ${video.title}`);
       const arabicTitle = await translateVideoTitle(video.title);
-      const captions = await fetchYouTubeCaptions(video.videoId);
+
+      // Level 1: Try YouTube captions (existing captions/auto-generated)
+      let captions = await fetchYouTubeCaptions(video.videoId);
+      let captionSource = 'youtube';
+      console.log(`[Import] YouTube captions for ${video.videoId}: ${captions.length} segments`);
+
+      // Level 2: If no YouTube captions, try AssemblyAI speech-to-text
+      if (captions.length === 0 && process.env.ASSEMBLYAI_API_KEY) {
+        console.log(`[Import] Trying AssemblyAI transcription for ${video.videoId}...`);
+        captions = await transcribeYouTubeVideo(video.videoId);
+        captionSource = 'assemblyai';
+        console.log(`[Import] AssemblyAI for ${video.videoId}: ${captions.length} segments`);
+      }
+
+      // Translate captions if found from any source
       let subtitlesVtt: string | null = null;
       if (captions.length > 0) {
+        console.log(`[Import] Translating ${captions.length} segments (source: ${captionSource}) for ${video.videoId}...`);
         const translatedCaps = await translateCaptions(captions);
         subtitlesVtt = translatedCaptionsToVtt(translatedCaps);
+        console.log(`[Import] Translation complete for ${video.videoId}`);
+      } else {
+        console.log(`[Import] No captions available for ${video.videoId} from any source`);
       }
 
       const created = await prisma.courseContent.create({
@@ -154,10 +175,11 @@ async function handleYouTubeImport(url: string, category: string | undefined, us
         originalTitle: video.title,
         arabicTitle,
         hasSubtitles: !!subtitlesVtt,
+        captionSource: subtitlesVtt ? captionSource : 'none',
         status: 'success',
       });
     } catch (error) {
-      console.error(`Error processing video ${video.videoId}:`, error);
+      console.error(`[Import] Error processing video ${video.videoId}:`, error);
       results.push({
         videoId: video.videoId,
         originalTitle: video.title,
