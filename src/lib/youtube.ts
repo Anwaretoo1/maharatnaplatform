@@ -239,104 +239,35 @@ export async function checkYouTubeCaptions(videoId: string): Promise<{ available
 }
 
 /**
- * Fetch YouTube captions by scraping the video page and following caption track URLs
- * Uses cookies from the initial page fetch to authenticate caption requests
+ * Fetch YouTube captions using youtube-transcript package (InnerTube + web scraping)
+ * This uses YouTube's Android client API which reliably returns transcripts
  */
 export async function fetchYouTubeCaptions(videoId: string, lang: string = 'en'): Promise<YouTubeCaptionSegment[]> {
   try {
-    // Step 1: Fetch the watch page and capture cookies
-    const pageRes = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Cookie': 'CONSENT=PENDING+987; SOCS=CAESEwgDEgk2MTQ3MzEyMjAaAmVuIAEaBgiA_LyaBg',
-      },
-      redirect: 'follow',
-    });
+    // Use youtube-transcript package - it uses Android InnerTube API with web scraping fallback
+    const { YoutubeTranscript } = await import('youtube-transcript');
 
-    if (!pageRes.ok) {
-      console.log(`[Captions] Failed to fetch video page for ${videoId}: ${pageRes.status}`);
+    // Try requested language first, then fall back to any available
+    let transcript;
+    try {
+      transcript = await YoutubeTranscript.fetchTranscript(videoId, { lang });
+    } catch {
+      // If specific language fails, try without language preference
+      transcript = await YoutubeTranscript.fetchTranscript(videoId);
+    }
+
+    if (!transcript || transcript.length === 0) {
+      console.log(`[Captions] No transcript found for ${videoId}`);
       return [];
     }
 
-    // Capture response cookies for authenticated caption requests
-    const responseCookies = pageRes.headers.get('set-cookie') || '';
-    const html = await pageRes.text();
+    console.log(`[Captions] Got ${transcript.length} segments for ${videoId} (lang: ${transcript[0]?.lang || lang})`);
 
-    // Step 2: Extract ytInitialPlayerResponse to find caption tracks
-    const playerMatch = html.match(new RegExp('var\\s+ytInitialPlayerResponse\\s*=\\s*({.*?});\\s*(?:var|<\\/script>)', 's'));
-    if (!playerMatch) {
-      console.log(`[Captions] Could not find player response for ${videoId}`);
-      return [];
-    }
-
-    const playerData = JSON.parse(playerMatch[1]);
-    const captionTracks = playerData?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
-
-    if (!captionTracks || captionTracks.length === 0) {
-      console.log(`[Captions] No caption tracks found for ${videoId}`);
-      return [];
-    }
-
-    // Step 3: Find the best caption track (prefer manual, then ASR)
-    let track = captionTracks.find((t: any) => t.languageCode === lang && t.kind !== 'asr');
-    if (!track) track = captionTracks.find((t: any) => t.languageCode === lang);
-    if (!track) track = captionTracks.find((t: any) => t.languageCode.startsWith('en'));
-    if (!track) track = captionTracks[0]; // fallback to first available
-
-    if (!track?.baseUrl) {
-      console.log(`[Captions] No suitable caption track URL for ${videoId}`);
-      return [];
-    }
-
-    console.log(`[Captions] Found caption track for ${videoId}: ${track.languageCode} (${track.kind || 'manual'})`);
-
-    // Step 4: Fetch the caption XML using the signed URL with same session cookies
-    const captionUrl = track.baseUrl + '&fmt=srv3';
-    const captionRes = await fetch(captionUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept': '*/*',
-        'Referer': `https://www.youtube.com/watch?v=${videoId}`,
-        'Cookie': responseCookies ? responseCookies : 'CONSENT=PENDING+987',
-      },
-    });
-
-    if (!captionRes.ok) {
-      // Try json3 format as fallback
-      const json3Url = track.baseUrl + '&fmt=json3';
-      const json3Res = await fetch(json3Url, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-          'Referer': `https://www.youtube.com/watch?v=${videoId}`,
-          'Cookie': responseCookies ? responseCookies : 'CONSENT=PENDING+987',
-        },
-      });
-
-      if (json3Res.ok) {
-        const json3Text = await json3Res.text();
-        const segments = parseJson3Captions(json3Text);
-        if (segments.length > 0) {
-          console.log(`[Captions] Got ${segments.length} segments via json3 for ${videoId}`);
-          return segments;
-        }
-      }
-
-      console.log(`[Captions] Caption fetch failed for ${videoId}: ${captionRes.status}`);
-      return [];
-    }
-
-    const captionXml = await captionRes.text();
-
-    // Step 5: Parse the caption XML
-    let segments = parseSrv3Captions(captionXml);
-    if (segments.length === 0) {
-      segments = parseTimedTextXml(captionXml);
-    }
-
-    console.log(`[Captions] Got ${segments.length} caption segments for ${videoId}`);
-    return segments;
+    return transcript.map(seg => ({
+      start: (seg.offset || 0) / 1000,
+      duration: (seg.duration || 3000) / 1000,
+      text: seg.text.replace(/\n/g, ' ').trim(),
+    }));
 
   } catch (error) {
     console.error(`[Captions] Error fetching captions for ${videoId}:`, error);
