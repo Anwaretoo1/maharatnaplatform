@@ -10,6 +10,10 @@ import {
   getYouTubeEmbedUrl,
 } from '@/lib/youtube';
 import {
+  detectPlatform,
+  processVideoUrls,
+} from '@/lib/platforms';
+import {
   translateCourseMetadata,
   translateVideoTitle,
   translateCaptions,
@@ -20,7 +24,11 @@ export const maxDuration = 300; // 5 minutes for long processing
 
 /**
  * POST /api/admin/import-course
- * Import a YouTube playlist or single video as a course with Arabic translation
+ * Import course from YouTube, Vimeo, Coursera, Udemy, or any video URL
+ *
+ * Body: { url: string, category?: string, videoUrls?: string[] }
+ * - url: single video or playlist URL
+ * - videoUrls: array of video URLs (for manual multi-video import)
  */
 export async function POST(request: NextRequest) {
   try {
@@ -29,167 +37,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'غير مصرح' }, { status: 401 });
     }
 
-    const { url, category } = await request.json();
+    const { url, category, videoUrls } = await request.json();
 
-    if (!url) {
+    if (!url && (!videoUrls || videoUrls.length === 0)) {
       return NextResponse.json({ error: 'الرابط مطلوب' }, { status: 400 });
-    }
-
-    const youtubeApiKey = process.env.YOUTUBE_API_KEY;
-    if (!youtubeApiKey) {
-      return NextResponse.json({ error: 'مفتاح YouTube API غير مُعد' }, { status: 500 });
     }
 
     if (!process.env.ANTHROPIC_API_KEY) {
       return NextResponse.json({ error: 'مفتاح Anthropic API غير مُعد' }, { status: 500 });
     }
 
-    // Determine if it's a playlist or single video
-    const playlistId = extractPlaylistId(url);
-    const videoId = extractVideoId(url);
+    const platform = url ? detectPlatform(url) : 'unknown';
 
-    if (!playlistId && !videoId) {
-      return NextResponse.json(
-        { error: 'رابط غير صالح. يرجى إدخال رابط قائمة تشغيل أو فيديو يوتيوب.' },
-        { status: 400 }
-      );
+    // ===== YOUTUBE =====
+    if (platform === 'youtube') {
+      return handleYouTubeImport(url, category, session.user.id);
     }
 
-    // Fetch videos
-    let videos;
-    if (playlistId) {
-      videos = await fetchPlaylistVideos(playlistId, youtubeApiKey);
-    } else {
-      const video = await fetchVideoDetails(videoId!, youtubeApiKey);
-      if (!video) {
-        return NextResponse.json({ error: 'الفيديو غير موجود' }, { status: 404 });
-      }
-      videos = [video];
-    }
+    // ===== OTHER PLATFORMS (Vimeo, Coursera, Udemy, direct, etc.) =====
+    // Can be a single URL or multiple URLs
+    const urlsToProcess = videoUrls && videoUrls.length > 0
+      ? videoUrls
+      : [url];
 
-    if (videos.length === 0) {
-      return NextResponse.json({ error: 'لم يتم العثور على فيديوهات' }, { status: 404 });
-    }
-
-    // Step 1: Translate course metadata using the first video's info
-    const playlistTitle = videos.length > 1
-      ? videos[0].title.replace(/\s*[-–|#]\s*\d+.*$/, '').trim() || videos[0].title
-      : videos[0].title;
-    const playlistDescription = videos[0].description;
-
-    const metadata = await translateCourseMetadata(
-      playlistTitle,
-      playlistDescription,
-      category
-    );
-
-    // Step 2: Create the course record
-    const course = await prisma.course.create({
-      data: {
-        title: metadata.title,
-        description: metadata.description + (metadata.seoKeywords.length > 0
-          ? `\n\nالكلمات المفتاحية: ${metadata.seoKeywords.join('، ')}`
-          : ''),
-        category: metadata.category,
-        creatorId: session.user.id,
-        thumbnailUrl: videos[0].thumbnailUrl,
-        isFree: true,
-        isImported: true,
-        sourcePlaylistUrl: url,
-        originalLanguage: 'en',
-        importStatus: 'processing',
-      },
-    });
-
-    // Step 3: Process each video — translate title + captions
-    const results = [];
-    for (let i = 0; i < videos.length; i++) {
-      const video = videos[i];
-
-      try {
-        // Translate video title
-        const arabicTitle = await translateVideoTitle(video.title);
-
-        // Fetch captions from YouTube
-        const captions = await fetchYouTubeCaptions(video.videoId);
-
-        // Translate captions if available
-        let subtitlesVtt: string | null = null;
-        if (captions.length > 0) {
-          const translatedCaps = await translateCaptions(captions);
-          subtitlesVtt = translatedCaptionsToVtt(translatedCaps);
-        }
-
-        // Create course content
-        const content = await prisma.courseContent.create({
-          data: {
-            courseId: course.id,
-            title: arabicTitle,
-            type: 'video',
-            content: getYouTubeEmbedUrl(video.videoId),
-            order: i + 1,
-            subtitlesVtt,
-            originalTitle: video.title,
-            sourceVideoUrl: `https://www.youtube.com/watch?v=${video.videoId}`,
-          },
-        });
-
-        results.push({
-          videoId: video.videoId,
-          originalTitle: video.title,
-          arabicTitle,
-          hasSubtitles: !!subtitlesVtt,
-          status: 'success',
-        });
-      } catch (error) {
-        console.error(`Error processing video ${video.videoId}:`, error);
-        results.push({
-          videoId: video.videoId,
-          originalTitle: video.title,
-          status: 'error',
-          error: error instanceof Error ? error.message : 'Unknown error',
-        });
-      }
-    }
-
-    // Update course status
-    const successCount = results.filter(r => r.status === 'success').length;
-    await prisma.course.update({
-      where: { id: course.id },
-      data: {
-        importStatus: successCount > 0 ? 'completed' : 'failed',
-      },
-    });
-
-    // Notify all learners about the new course
-    const allLearners = await prisma.user.findMany({
-      where: { id: { not: session.user.id } },
-      select: { id: true },
-    });
-
-    if (allLearners.length > 0) {
-      await prisma.notification.createMany({
-        data: allLearners.map((u) => ({
-          userId: u.id,
-          title: 'دورة مترجمة جديدة',
-          message: `تم إضافة دورة مترجمة جديدة: "${metadata.title}"`,
-          type: 'new_course',
-          link: `/courses/${course.id}`,
-        })),
-      });
-    }
-
-    return NextResponse.json({
-      success: true,
-      course: {
-        id: course.id,
-        title: metadata.title,
-        videosProcessed: results.length,
-        videosSucceeded: successCount,
-        videosFailed: results.length - successCount,
-      },
-      results,
-    });
+    return handleGenericImport(urlsToProcess, url, category, session.user.id);
 
   } catch (error) {
     console.error('Import course error:', error);
@@ -201,8 +72,236 @@ export async function POST(request: NextRequest) {
 }
 
 /**
+ * Handle YouTube playlist/video import
+ */
+async function handleYouTubeImport(url: string, category: string | undefined, userId: string) {
+  const youtubeApiKey = process.env.YOUTUBE_API_KEY;
+  if (!youtubeApiKey) {
+    return NextResponse.json({ error: 'مفتاح YouTube API غير مُعد' }, { status: 500 });
+  }
+
+  const playlistId = extractPlaylistId(url);
+  const videoId = extractVideoId(url);
+
+  if (!playlistId && !videoId) {
+    return NextResponse.json({ error: 'رابط يوتيوب غير صالح' }, { status: 400 });
+  }
+
+  let videos;
+  if (playlistId) {
+    videos = await fetchPlaylistVideos(playlistId, youtubeApiKey);
+  } else {
+    const video = await fetchVideoDetails(videoId!, youtubeApiKey);
+    if (!video) return NextResponse.json({ error: 'الفيديو غير موجود' }, { status: 404 });
+    videos = [video];
+  }
+
+  if (videos.length === 0) {
+    return NextResponse.json({ error: 'لم يتم العثور على فيديوهات' }, { status: 404 });
+  }
+
+  // Translate course metadata
+  const playlistTitle = videos.length > 1
+    ? videos[0].title.replace(/\s*[-–|#]\s*\d+.*$/, '').trim() || videos[0].title
+    : videos[0].title;
+
+  const metadata = await translateCourseMetadata(playlistTitle, videos[0].description, category);
+
+  // Create course
+  const course = await prisma.course.create({
+    data: {
+      title: metadata.title,
+      description: metadata.description + (metadata.seoKeywords.length > 0
+        ? `\n\nالكلمات المفتاحية: ${metadata.seoKeywords.join('، ')}` : ''),
+      category: metadata.category,
+      creatorId: userId,
+      thumbnailUrl: videos[0].thumbnailUrl,
+      isFree: true,
+      isImported: true,
+      sourcePlaylistUrl: url,
+      originalLanguage: 'en',
+      importStatus: 'processing',
+    },
+  });
+
+  // Process each video
+  const results = [];
+  for (let i = 0; i < videos.length; i++) {
+    const video = videos[i];
+    try {
+      const arabicTitle = await translateVideoTitle(video.title);
+      const captions = await fetchYouTubeCaptions(video.videoId);
+      let subtitlesVtt: string | null = null;
+      if (captions.length > 0) {
+        const translatedCaps = await translateCaptions(captions);
+        subtitlesVtt = translatedCaptionsToVtt(translatedCaps);
+      }
+
+      await prisma.courseContent.create({
+        data: {
+          courseId: course.id,
+          title: arabicTitle,
+          type: 'video',
+          content: getYouTubeEmbedUrl(video.videoId),
+          order: i + 1,
+          subtitlesVtt,
+          originalTitle: video.title,
+          sourceVideoUrl: `https://www.youtube.com/watch?v=${video.videoId}`,
+        },
+      });
+
+      results.push({
+        videoId: video.videoId,
+        originalTitle: video.title,
+        arabicTitle,
+        hasSubtitles: !!subtitlesVtt,
+        status: 'success',
+      });
+    } catch (error) {
+      console.error(`Error processing video ${video.videoId}:`, error);
+      results.push({
+        videoId: video.videoId,
+        originalTitle: video.title,
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  return finalizeCourse(course.id, metadata.title, results, userId);
+}
+
+/**
+ * Handle generic platform import (Vimeo, Coursera, Udemy, direct URLs, etc.)
+ */
+async function handleGenericImport(urls: string[], sourceUrl: string, category: string | undefined, userId: string) {
+  // Extract video info from all URLs
+  const videos = await processVideoUrls(urls);
+
+  if (videos.length === 0) {
+    return NextResponse.json({ error: 'لم يتم العثور على فيديوهات في الروابط المقدمة' }, { status: 404 });
+  }
+
+  // Translate course metadata
+  const courseTitle = videos.length > 1
+    ? videos[0].title.replace(/\s*[-–|#]\s*\d+.*$/, '').trim() || videos[0].title
+    : videos[0].title;
+
+  const metadata = await translateCourseMetadata(courseTitle, videos[0].description, category);
+
+  // Create course
+  const course = await prisma.course.create({
+    data: {
+      title: metadata.title,
+      description: metadata.description + (metadata.seoKeywords.length > 0
+        ? `\n\nالكلمات المفتاحية: ${metadata.seoKeywords.join('، ')}` : ''),
+      category: metadata.category,
+      creatorId: userId,
+      thumbnailUrl: videos[0].thumbnailUrl || '',
+      isFree: true,
+      isImported: true,
+      sourcePlaylistUrl: sourceUrl,
+      originalLanguage: 'en',
+      importStatus: 'processing',
+    },
+  });
+
+  // Process each video
+  const results = [];
+  for (let i = 0; i < videos.length; i++) {
+    const video = videos[i];
+    try {
+      const arabicTitle = await translateVideoTitle(video.title);
+
+      // For YouTube videos embedded in other platforms, try to get captions
+      let subtitlesVtt: string | null = null;
+      const ytId = video.embedUrl.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/)?.[1];
+      if (ytId) {
+        const captions = await fetchYouTubeCaptions(ytId);
+        if (captions.length > 0) {
+          const translatedCaps = await translateCaptions(captions);
+          subtitlesVtt = translatedCaptionsToVtt(translatedCaps);
+        }
+      }
+
+      await prisma.courseContent.create({
+        data: {
+          courseId: course.id,
+          title: arabicTitle,
+          type: 'video',
+          content: video.embedUrl,
+          order: i + 1,
+          subtitlesVtt,
+          originalTitle: video.title,
+          sourceVideoUrl: video.originalUrl,
+        },
+      });
+
+      results.push({
+        videoId: video.videoId,
+        originalTitle: video.title,
+        arabicTitle,
+        hasSubtitles: !!subtitlesVtt,
+        status: 'success',
+      });
+    } catch (error) {
+      console.error(`Error processing video ${video.originalUrl}:`, error);
+      results.push({
+        videoId: video.videoId,
+        originalTitle: video.title,
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  return finalizeCourse(course.id, metadata.title, results, userId);
+}
+
+/**
+ * Finalize course: update status, send notifications, return response
+ */
+async function finalizeCourse(courseId: string, title: string, results: any[], userId: string) {
+  const successCount = results.filter(r => r.status === 'success').length;
+
+  await prisma.course.update({
+    where: { id: courseId },
+    data: { importStatus: successCount > 0 ? 'completed' : 'failed' },
+  });
+
+  // Notify learners
+  const allLearners = await prisma.user.findMany({
+    where: { id: { not: userId } },
+    select: { id: true },
+  });
+
+  if (allLearners.length > 0) {
+    await prisma.notification.createMany({
+      data: allLearners.map((u) => ({
+        userId: u.id,
+        title: 'دورة مترجمة جديدة',
+        message: `تم إضافة دورة مترجمة جديدة: "${title}"`,
+        type: 'new_course',
+        link: `/courses/${courseId}`,
+      })),
+    });
+  }
+
+  return NextResponse.json({
+    success: true,
+    course: {
+      id: courseId,
+      title,
+      videosProcessed: results.length,
+      videosSucceeded: successCount,
+      videosFailed: results.length - successCount,
+    },
+    results,
+  });
+}
+
+/**
  * GET /api/admin/import-course
- * Get list of imported courses with their status
  */
 export async function GET() {
   try {
@@ -214,9 +313,7 @@ export async function GET() {
     const importedCourses = await prisma.course.findMany({
       where: { isImported: true },
       orderBy: { createdAt: 'desc' },
-      include: {
-        _count: { select: { content: true, enrollments: true } },
-      },
+      include: { _count: { select: { content: true, enrollments: true } } },
     });
 
     return NextResponse.json({ courses: importedCourses });

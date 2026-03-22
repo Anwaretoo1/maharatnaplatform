@@ -12,9 +12,13 @@ interface ImportResult {
   error?: string;
 }
 
+type ImportMode = 'single' | 'multi';
+
 export default function ImportCourseButton() {
   const [showModal, setShowModal] = useState(false);
+  const [mode, setMode] = useState<ImportMode>('single');
   const [url, setUrl] = useState('');
+  const [multiUrls, setMultiUrls] = useState('');
   const [category, setCategory] = useState('');
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState('');
@@ -24,18 +28,30 @@ export default function ImportCourseButton() {
   const router = useRouter();
 
   const handleImport = async () => {
-    if (!url.trim()) return;
+    const hasInput = mode === 'single' ? url.trim() : multiUrls.trim();
+    if (!hasInput) return;
+
     setLoading(true);
     setError('');
     setResults(null);
     setCourseInfo(null);
-    setProgress('جاري تحليل الرابط واستخراج الفيديوهات...');
+    setProgress('جاري تحليل الروابط واستخراج الفيديوهات...');
 
     try {
+      const body: any = { category: category.trim() || undefined };
+
+      if (mode === 'single') {
+        body.url = url.trim();
+      } else {
+        const urls = multiUrls.split('\n').map(u => u.trim()).filter(Boolean);
+        body.url = urls[0];
+        body.videoUrls = urls;
+      }
+
       const res = await fetch('/api/admin/import-course', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: url.trim(), category: category.trim() || undefined }),
+        body: JSON.stringify(body),
       });
 
       const data = await res.json();
@@ -51,7 +67,7 @@ export default function ImportCourseButton() {
       setResults(data.results);
       setProgress('');
       router.refresh();
-    } catch (err) {
+    } catch {
       setError('حدث خطأ في الاتصال بالخادم');
     }
 
@@ -61,6 +77,7 @@ export default function ImportCourseButton() {
   const handleClose = () => {
     setShowModal(false);
     setUrl('');
+    setMultiUrls('');
     setCategory('');
     setResults(null);
     setError('');
@@ -88,7 +105,7 @@ export default function ImportCourseButton() {
             <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-neutral-700 sticky top-0 bg-white dark:bg-neutral-900 z-10">
               <div>
                 <h2 className="font-bold text-lg">🌍 استيراد دورة أجنبية</h2>
-                <p className="text-xs text-gray-500 mt-1">الصق رابط قائمة تشغيل أو فيديو يوتيوب وسيتم ترجمته تلقائياً</p>
+                <p className="text-xs text-gray-500 mt-1">يدعم YouTube, Vimeo, Coursera, Udemy وأي رابط فيديو</p>
               </div>
               <button onClick={handleClose} className="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
             </div>
@@ -97,31 +114,77 @@ export default function ImportCourseButton() {
               {/* Input Form */}
               {!results && (
                 <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-bold mb-2">رابط يوتيوب (قائمة تشغيل أو فيديو)</label>
-                    <input
-                      type="url"
-                      dir="ltr"
-                      placeholder="https://www.youtube.com/playlist?list=PLxxxxxx"
-                      className="w-full px-4 py-3 border-2 rounded-lg text-sm dark:bg-neutral-800 dark:border-neutral-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-colors font-mono"
-                      value={url}
-                      onChange={(e) => setUrl(e.target.value)}
-                      disabled={loading}
-                    />
-                    <p className="text-xs text-gray-400 mt-1">
-                      يدعم: قوائم التشغيل (playlist) وفيديوهات مفردة
-                    </p>
+                  {/* Mode switcher */}
+                  <div className="flex gap-2 bg-gray-100 dark:bg-neutral-800 rounded-lg p-1">
+                    <button
+                      onClick={() => setMode('single')}
+                      className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+                        mode === 'single'
+                          ? 'bg-white dark:bg-neutral-700 shadow-sm text-indigo-700 dark:text-indigo-400'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      رابط واحد / قائمة تشغيل
+                    </button>
+                    <button
+                      onClick={() => setMode('multi')}
+                      className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+                        mode === 'multi'
+                          ? 'bg-white dark:bg-neutral-700 shadow-sm text-indigo-700 dark:text-indigo-400'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      روابط متعددة
+                    </button>
                   </div>
 
+                  {/* Single URL input */}
+                  {mode === 'single' && (
+                    <div>
+                      <label className="block text-sm font-bold mb-2">رابط الدورة أو الفيديو</label>
+                      <input
+                        type="url"
+                        dir="ltr"
+                        placeholder="https://www.youtube.com/playlist?list=PLxxxxxx"
+                        className="w-full px-4 py-3 border-2 rounded-lg text-sm dark:bg-neutral-800 dark:border-neutral-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-colors font-mono"
+                        value={url}
+                        onChange={(e) => setUrl(e.target.value)}
+                        disabled={loading}
+                      />
+                      <p className="text-xs text-gray-400 mt-1">
+                        يدعم: YouTube, Vimeo, Coursera, Udemy, Khan Academy, روابط فيديو مباشرة
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Multi URL input */}
+                  {mode === 'multi' && (
+                    <div>
+                      <label className="block text-sm font-bold mb-2">روابط الفيديوهات (رابط في كل سطر)</label>
+                      <textarea
+                        dir="ltr"
+                        rows={6}
+                        placeholder={"https://www.youtube.com/watch?v=xxx\nhttps://vimeo.com/123456\nhttps://example.com/video.mp4"}
+                        className="w-full px-4 py-3 border-2 rounded-lg text-sm dark:bg-neutral-800 dark:border-neutral-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-colors font-mono"
+                        value={multiUrls}
+                        onChange={(e) => setMultiUrls(e.target.value)}
+                        disabled={loading}
+                      />
+                      <p className="text-xs text-gray-400 mt-1">
+                        ضع رابط كل فيديو في سطر منفصل — يمكنك مزج منصات مختلفة
+                      </p>
+                    </div>
+                  )}
+
                   <div>
-                    <label className="block text-sm font-bold mb-2">التصنيف (اختياري - سيتم تحديده تلقائياً)</label>
+                    <label className="block text-sm font-bold mb-2">التصنيف (اختياري — تحديد تلقائي بالذكاء الاصطناعي)</label>
                     <select
                       className="w-full px-4 py-3 border-2 rounded-lg text-sm dark:bg-neutral-800 dark:border-neutral-700 focus:border-indigo-500 outline-none"
                       value={category}
                       onChange={(e) => setCategory(e.target.value)}
                       disabled={loading}
                     >
-                      <option value="">تحديد تلقائي بالذكاء الاصطناعي</option>
+                      <option value="">تحديد تلقائي</option>
                       <option value="برمجة">برمجة</option>
                       <option value="تصميم">تصميم</option>
                       <option value="تسويق">تسويق</option>
@@ -133,17 +196,38 @@ export default function ImportCourseButton() {
                     </select>
                   </div>
 
-                  {/* Info box */}
+                  {/* Supported platforms */}
                   <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4 text-sm">
-                    <h4 className="font-bold text-indigo-800 dark:text-indigo-300 mb-2">ما سيحدث تلقائياً:</h4>
-                    <ol className="list-decimal list-inside space-y-1 text-indigo-700 dark:text-indigo-400 text-xs">
-                      <li>استخراج جميع فيديوهات القائمة</li>
-                      <li>ترجمة عنوان ووصف الدورة للعربية (محسّن SEO)</li>
-                      <li>ترجمة عنوان كل فيديو للعربية</li>
-                      <li>استخراج الترجمة النصية من يوتيوب</li>
-                      <li>ترجمة الترجمة النصية للعربية بالذكاء الاصطناعي</li>
-                      <li>نشر الدورة مع ترجمة عربية متزامنة</li>
-                    </ol>
+                    <h4 className="font-bold text-indigo-800 dark:text-indigo-300 mb-2">المنصات المدعومة:</h4>
+                    <div className="grid grid-cols-2 gap-2 text-xs text-indigo-700 dark:text-indigo-400">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-5 text-center">▶️</span> YouTube (قوائم تشغيل + فيديو)
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-5 text-center">🎬</span> Vimeo
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-5 text-center">🎓</span> Coursera
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-5 text-center">📚</span> Udemy
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-5 text-center">🧮</span> Khan Academy
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-5 text-center">🔗</span> أي رابط فيديو مباشر
+                      </div>
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-indigo-200 dark:border-indigo-800">
+                      <h4 className="font-bold text-indigo-800 dark:text-indigo-300 mb-1">ما سيحدث تلقائياً:</h4>
+                      <ol className="list-decimal list-inside space-y-0.5 text-xs">
+                        <li>استخراج معلومات الفيديوهات من المنصة</li>
+                        <li>ترجمة العنوان والوصف للعربية (محسّن SEO)</li>
+                        <li>استخراج وترجمة الترجمة النصية (إن وجدت)</li>
+                        <li>نشر الدورة جاهزة للمشاهدة</li>
+                      </ol>
+                    </div>
                   </div>
 
                   {error && (
@@ -164,7 +248,7 @@ export default function ImportCourseButton() {
 
                   <button
                     onClick={handleImport}
-                    disabled={loading || !url.trim()}
+                    disabled={loading || (mode === 'single' ? !url.trim() : !multiUrls.trim())}
                     className="w-full bg-gradient-to-l from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-3 px-6 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm transition-all shadow-md"
                   >
                     {loading ? 'جاري الاستيراد والترجمة...' : '🚀 بدء الاستيراد والترجمة'}
@@ -175,7 +259,6 @@ export default function ImportCourseButton() {
               {/* Results */}
               {results && courseInfo && (
                 <div className="space-y-4">
-                  {/* Success summary */}
                   <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 text-center">
                     <div className="text-3xl mb-2">✅</div>
                     <h3 className="font-bold text-green-800 dark:text-green-300 text-lg">{courseInfo.title}</h3>
@@ -193,7 +276,6 @@ export default function ImportCourseButton() {
                     </div>
                   </div>
 
-                  {/* Video details */}
                   <div className="space-y-2 max-h-60 overflow-y-auto">
                     {results.map((r, i) => (
                       <div
@@ -226,7 +308,6 @@ export default function ImportCourseButton() {
                     ))}
                   </div>
 
-                  {/* Action buttons */}
                   <div className="flex gap-3">
                     <a
                       href={`/courses/${courseInfo.id}`}
@@ -239,6 +320,7 @@ export default function ImportCourseButton() {
                         setResults(null);
                         setCourseInfo(null);
                         setUrl('');
+                        setMultiUrls('');
                       }}
                       className="flex-1 bg-gray-100 dark:bg-neutral-800 hover:bg-gray-200 dark:hover:bg-neutral-700 font-bold py-2.5 px-4 rounded-lg text-sm transition-colors"
                     >
