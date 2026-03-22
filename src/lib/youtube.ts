@@ -241,106 +241,165 @@ export async function checkYouTubeCaptions(videoId: string): Promise<{ available
 }
 
 /**
- * Fetch YouTube captions using youtube-transcript package (InnerTube + web scraping)
- * with a third-party fallback via yt.lemnoslife.com
+ * Fetch YouTube captions with multiple fallback methods:
+ * 1. Direct caption URL extraction from player response (most reliable)
+ * 2. youtube-transcript package
+ * 3. Returns empty (AssemblyAI handles it in import-course)
  */
 export async function fetchYouTubeCaptions(videoId: string, lang: string = 'en'): Promise<YouTubeCaptionSegment[]> {
   console.log(`[Captions] Starting caption fetch for videoId=${videoId}, lang=${lang}`);
 
-  // --- Attempt 1: youtube-transcript package ---
+  // --- Attempt 1: Direct caption URL from player response ---
   try {
-    console.log(`[Captions] Attempt 1: youtube-transcript package (lang=${lang})`);
+    console.log(`[Captions] Attempt 1: Direct caption URL extraction for ${videoId}`);
+    const segments = await fetchCaptionsFromPlayerResponse(videoId, lang);
+    if (segments.length > 0) {
+      console.log(`[Captions] Direct extraction succeeded: ${segments.length} segments for ${videoId}`);
+      return segments;
+    }
+    console.log(`[Captions] Direct extraction returned 0 segments for ${videoId}`);
+  } catch (error) {
+    console.error(`[Captions] Direct extraction failed for ${videoId}:`, error instanceof Error ? error.message : error);
+  }
+
+  // --- Attempt 2: youtube-transcript package ---
+  try {
+    console.log(`[Captions] Attempt 2: youtube-transcript package (lang=${lang})`);
 
     let transcript;
     try {
       transcript = await YoutubeTranscript.fetchTranscript(videoId, { lang });
-      console.log(`[Captions] youtube-transcript succeeded with lang=${lang}, segments=${transcript?.length ?? 0}`);
-    } catch (langErr) {
-      console.warn(`[Captions] youtube-transcript failed for lang=${lang}, retrying without lang preference:`, langErr);
+    } catch {
       transcript = await YoutubeTranscript.fetchTranscript(videoId);
-      console.log(`[Captions] youtube-transcript succeeded without lang filter, segments=${transcript?.length ?? 0}`);
     }
 
     if (transcript && transcript.length > 0) {
-      console.log(`[Captions] Returning ${transcript.length} segments from youtube-transcript for ${videoId}`);
+      console.log(`[Captions] youtube-transcript: ${transcript.length} segments for ${videoId}`);
       return transcript.map(seg => ({
         start: (seg.offset || 0) / 1000,
         duration: (seg.duration || 3000) / 1000,
         text: seg.text.replace(/\n/g, ' ').trim(),
       }));
     }
-
-    console.log(`[Captions] youtube-transcript returned empty transcript for ${videoId}`);
   } catch (error) {
-    console.error(`[Captions] youtube-transcript package failed entirely for ${videoId}:`, error instanceof Error ? error.message : error);
-  }
-
-  // --- Attempt 2: Third-party fallback (yt.lemnoslife.com) ---
-  try {
-    const fallbackUrl = `https://yt.lemnoslife.com/noKey/captions?videoId=${videoId}&lang=${lang}`;
-    console.log(`[Captions] Attempt 2: third-party fallback GET ${fallbackUrl}`);
-
-    const res = await fetch(fallbackUrl);
-    console.log(`[Captions] Fallback response status=${res.status} for ${videoId}`);
-
-    if (!res.ok) {
-      console.error(`[Captions] Fallback returned HTTP ${res.status} for ${videoId}`);
-      return [];
-    }
-
-    const contentType = res.headers.get('content-type') || '';
-    const body = await res.text();
-    console.log(`[Captions] Fallback content-type=${contentType}, body length=${body.length} for ${videoId}`);
-
-    if (body.length === 0) {
-      console.log(`[Captions] Fallback returned empty body for ${videoId}`);
-      return [];
-    }
-
-    // Try parsing as JSON (the API may return JSON with caption data)
-    let segments: YouTubeCaptionSegment[] = [];
-
-    if (contentType.includes('application/json') || body.trimStart().startsWith('{') || body.trimStart().startsWith('[')) {
-      try {
-        const json = JSON.parse(body);
-        console.log(`[Captions] Fallback parsed as JSON, keys=${Object.keys(json).join(',')} for ${videoId}`);
-
-        // Handle various JSON response shapes
-        const items = json.subtitles || json.captions || json.events || json.items || json;
-        if (Array.isArray(items)) {
-          segments = items
-            .filter((item: any) => item.text || item.utf8)
-            .map((item: any) => ({
-              start: (item.start ?? item.tStartMs ?? item.offset ?? 0) / (item.start !== undefined ? 1 : 1000),
-              duration: (item.duration ?? item.dDurationMs ?? item.dur ?? 3000) / (item.duration !== undefined ? 1 : 1000),
-              text: (item.text || item.utf8 || '').replace(/\n/g, ' ').trim(),
-            }));
-        }
-      } catch (jsonErr) {
-        console.warn(`[Captions] Fallback JSON parse failed, trying XML:`, jsonErr);
-      }
-    }
-
-    // Try parsing as XML (timedtext format)
-    if (segments.length === 0 && body.includes('<text')) {
-      console.log(`[Captions] Fallback parsing as timedtext XML for ${videoId}`);
-      segments = parseTimedTextXml(body);
-    }
-
-    // Try parsing as SRV3 XML
-    if (segments.length === 0 && body.includes('<p ')) {
-      console.log(`[Captions] Fallback parsing as SRV3 XML for ${videoId}`);
-      segments = parseSrv3Captions(body);
-    }
-
-    console.log(`[Captions] Fallback produced ${segments.length} segments for ${videoId}`);
-    return segments;
-
-  } catch (fallbackError) {
-    console.error(`[Captions] Fallback also failed for ${videoId}:`, fallbackError instanceof Error ? fallbackError.message : fallbackError);
+    console.error(`[Captions] youtube-transcript failed for ${videoId}:`, error instanceof Error ? error.message : error);
   }
 
   console.log(`[Captions] All caption sources exhausted for ${videoId}, returning empty`);
+  return [];
+}
+
+/**
+ * Extract captions directly from YouTube player response caption track URLs
+ * This is the most reliable method - fetches the signed caption URL from the page
+ */
+async function fetchCaptionsFromPlayerResponse(videoId: string, lang: string): Promise<YouTubeCaptionSegment[]> {
+  // Step 1: Fetch YouTube watch page
+  const pageRes = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Cookie': 'CONSENT=PENDING+987; SOCS=CAESEwgDEgk2NDcwMTcxMjQaAmVuIAEaBgiA_NW2Bg',
+    },
+  });
+
+  if (!pageRes.ok) {
+    console.error(`[Captions] Page fetch failed: HTTP ${pageRes.status}`);
+    return [];
+  }
+
+  const html = await pageRes.text();
+
+  // Step 2: Extract ytInitialPlayerResponse
+  const playerMatch = html.match(new RegExp('var\\s+ytInitialPlayerResponse\\s*=\\s*({.*?});\\s*(?:var|<\\/script>)', 's'));
+  if (!playerMatch) {
+    console.error(`[Captions] Could not find ytInitialPlayerResponse in page`);
+    return [];
+  }
+
+  let playerData;
+  try {
+    playerData = JSON.parse(playerMatch[1]);
+  } catch {
+    console.error(`[Captions] Failed to parse player response JSON`);
+    return [];
+  }
+
+  // Step 3: Get caption tracks
+  const captionTracks = playerData?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+  if (!captionTracks || captionTracks.length === 0) {
+    console.log(`[Captions] No caption tracks found in player response for ${videoId}`);
+    // Check if captions are disabled
+    const playability = playerData?.playabilityStatus?.status;
+    console.log(`[Captions] Playability status: ${playability}`);
+    return [];
+  }
+
+  console.log(`[Captions] Found ${captionTracks.length} caption tracks: ${captionTracks.map((t: any) => `${t.languageCode}(${t.kind || 'manual'})`).join(', ')}`);
+
+  // Step 4: Find best caption track
+  // Priority: requested lang manual > requested lang auto > English manual > English auto > any
+  let bestTrack = null;
+
+  // Try exact language match (manual first, then auto)
+  bestTrack = captionTracks.find((t: any) => t.languageCode === lang && t.kind !== 'asr');
+  if (!bestTrack) bestTrack = captionTracks.find((t: any) => t.languageCode === lang);
+  if (!bestTrack) bestTrack = captionTracks.find((t: any) => t.languageCode === 'en' && t.kind !== 'asr');
+  if (!bestTrack) bestTrack = captionTracks.find((t: any) => t.languageCode === 'en');
+  if (!bestTrack) bestTrack = captionTracks[0]; // Any track
+
+  if (!bestTrack?.baseUrl) {
+    console.error(`[Captions] No baseUrl found in caption track`);
+    return [];
+  }
+
+  console.log(`[Captions] Using track: lang=${bestTrack.languageCode}, kind=${bestTrack.kind || 'manual'}`);
+
+  // Step 5: Fetch caption data from the signed URL
+  // Request in json3 format for easier parsing
+  let captionUrl = bestTrack.baseUrl;
+  if (!captionUrl.includes('fmt=')) {
+    captionUrl += '&fmt=json3';
+  }
+
+  const captionRes = await fetch(captionUrl, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+    },
+  });
+
+  if (!captionRes.ok) {
+    console.error(`[Captions] Caption URL fetch failed: HTTP ${captionRes.status}`);
+    // Try without json3 format
+    const fallbackRes = await fetch(bestTrack.baseUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+      },
+    });
+    if (!fallbackRes.ok) return [];
+    const xml = await fallbackRes.text();
+    return parseTimedTextXml(xml);
+  }
+
+  const captionBody = await captionRes.text();
+  console.log(`[Captions] Caption response length: ${captionBody.length}`);
+
+  // Step 6: Parse response
+  // Try json3 format first
+  if (captionBody.trimStart().startsWith('{')) {
+    const segments = parseJson3Captions(captionBody);
+    if (segments.length > 0) return segments;
+  }
+
+  // Try XML format
+  if (captionBody.includes('<text')) {
+    return parseTimedTextXml(captionBody);
+  }
+
+  if (captionBody.includes('<p ')) {
+    return parseSrv3Captions(captionBody);
+  }
+
   return [];
 }
 
