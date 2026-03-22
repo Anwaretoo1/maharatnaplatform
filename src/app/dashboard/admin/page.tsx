@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { DeleteUserButton, ChangeRoleButton, ResetPasswordButton, DeleteCourseAdminButton, SendMessageButton, GenerateCodeButton, DiscountManager } from './AdminActions';
 import OnlineUsersCard from './OnlineUsersCard';
+import ImportCourseButton from './ImportCourseButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -88,8 +89,9 @@ export default async function AdminDashboard() {
         </div>
       </div>
 
-      {/* ===== رموز التسجيل + الخصومات ===== */}
+      {/* ===== استيراد دورات + رموز التسجيل + الخصومات ===== */}
       <div className="flex flex-wrap gap-3 justify-end mb-4">
+        <ImportCourseButton />
         <DiscountManager courses={allCourses.map(c => ({ id: c.id, title: c.title, isFree: c.isFree, price: c.price }))} role="admin" />
         <GenerateCodeButton courses={allCourses.map(c => ({ id: c.id, title: c.title, isFree: c.isFree, price: c.price }))} />
       </div>

@@ -25,8 +25,8 @@ export default async function CourseLearnPage({ params }: { params: Promise<{ id
   // If not enrolled and not creator/admin, redirect to course page
   const course = await prisma.course.findUnique({
     where: { id },
-    include: { content: { orderBy: { order: 'asc' } } }
-  });
+    include: { content: { orderBy: { order: 'asc' } } },
+  }) as any;
 
   if (!course) return <div>الدورة غير موجودة</div>;
 

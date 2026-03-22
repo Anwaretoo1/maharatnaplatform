@@ -53,6 +53,12 @@ model Course {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  // Imported course fields
+  isImported         Boolean  @default(false)
+  sourcePlaylistUrl  String?  @db.Text
+  originalLanguage   String?  // e.g. 'en', 'fr'
+  importStatus       String?  // 'pending' | 'processing' | 'completed' | 'failed'
+
   creator      User     @relation(fields: [creatorId], references: [id])
   content      CourseContent[]
   enrollments  Enrollment[]
@@ -82,7 +88,12 @@ model CourseContent {
   type      String   // 'video' | 'image' | 'text' | 'file'
   content   String   @db.Text
   order     Int
-  
+
+  // Subtitle fields for imported courses
+  subtitlesVtt     String?  @db.LongText  // Arabic subtitles in WebVTT format
+  originalTitle    String?                  // Original title before translation
+  sourceVideoUrl   String?  @db.Text       // Original YouTube URL
+
   course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   progress  Progress[]
 }
