@@ -76,9 +76,7 @@ export async function POST(request: NextRequest) {
  */
 async function handleYouTubeImport(url: string, category: string | undefined, userId: string) {
   const youtubeApiKey = process.env.YOUTUBE_API_KEY;
-  if (!youtubeApiKey) {
-    return NextResponse.json({ error: 'مفتاح YouTube API غير مُعد' }, { status: 500 });
-  }
+  // API key is optional - scraping works without it
 
   const playlistId = extractPlaylistId(url);
   const videoId = extractVideoId(url);
