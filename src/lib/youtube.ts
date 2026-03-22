@@ -2,6 +2,8 @@
  * YouTube utilities - works WITHOUT API key using InnerTube
  */
 
+import { YoutubeTranscript } from 'youtube-transcript';
+
 export interface YouTubeVideo {
   videoId: string;
   title: string;
@@ -240,39 +242,106 @@ export async function checkYouTubeCaptions(videoId: string): Promise<{ available
 
 /**
  * Fetch YouTube captions using youtube-transcript package (InnerTube + web scraping)
- * This uses YouTube's Android client API which reliably returns transcripts
+ * with a third-party fallback via yt.lemnoslife.com
  */
 export async function fetchYouTubeCaptions(videoId: string, lang: string = 'en'): Promise<YouTubeCaptionSegment[]> {
-  try {
-    // Use youtube-transcript package - it uses Android InnerTube API with web scraping fallback
-    const { YoutubeTranscript } = await import('youtube-transcript');
+  console.log(`[Captions] Starting caption fetch for videoId=${videoId}, lang=${lang}`);
 
-    // Try requested language first, then fall back to any available
+  // --- Attempt 1: youtube-transcript package ---
+  try {
+    console.log(`[Captions] Attempt 1: youtube-transcript package (lang=${lang})`);
+
     let transcript;
     try {
       transcript = await YoutubeTranscript.fetchTranscript(videoId, { lang });
-    } catch {
-      // If specific language fails, try without language preference
+      console.log(`[Captions] youtube-transcript succeeded with lang=${lang}, segments=${transcript?.length ?? 0}`);
+    } catch (langErr) {
+      console.warn(`[Captions] youtube-transcript failed for lang=${lang}, retrying without lang preference:`, langErr);
       transcript = await YoutubeTranscript.fetchTranscript(videoId);
+      console.log(`[Captions] youtube-transcript succeeded without lang filter, segments=${transcript?.length ?? 0}`);
     }
 
-    if (!transcript || transcript.length === 0) {
-      console.log(`[Captions] No transcript found for ${videoId}`);
+    if (transcript && transcript.length > 0) {
+      console.log(`[Captions] Returning ${transcript.length} segments from youtube-transcript for ${videoId}`);
+      return transcript.map(seg => ({
+        start: (seg.offset || 0) / 1000,
+        duration: (seg.duration || 3000) / 1000,
+        text: seg.text.replace(/\n/g, ' ').trim(),
+      }));
+    }
+
+    console.log(`[Captions] youtube-transcript returned empty transcript for ${videoId}`);
+  } catch (error) {
+    console.error(`[Captions] youtube-transcript package failed entirely for ${videoId}:`, error instanceof Error ? error.message : error);
+  }
+
+  // --- Attempt 2: Third-party fallback (yt.lemnoslife.com) ---
+  try {
+    const fallbackUrl = `https://yt.lemnoslife.com/noKey/captions?videoId=${videoId}&lang=${lang}`;
+    console.log(`[Captions] Attempt 2: third-party fallback GET ${fallbackUrl}`);
+
+    const res = await fetch(fallbackUrl);
+    console.log(`[Captions] Fallback response status=${res.status} for ${videoId}`);
+
+    if (!res.ok) {
+      console.error(`[Captions] Fallback returned HTTP ${res.status} for ${videoId}`);
       return [];
     }
 
-    console.log(`[Captions] Got ${transcript.length} segments for ${videoId} (lang: ${transcript[0]?.lang || lang})`);
+    const contentType = res.headers.get('content-type') || '';
+    const body = await res.text();
+    console.log(`[Captions] Fallback content-type=${contentType}, body length=${body.length} for ${videoId}`);
 
-    return transcript.map(seg => ({
-      start: (seg.offset || 0) / 1000,
-      duration: (seg.duration || 3000) / 1000,
-      text: seg.text.replace(/\n/g, ' ').trim(),
-    }));
+    if (body.length === 0) {
+      console.log(`[Captions] Fallback returned empty body for ${videoId}`);
+      return [];
+    }
 
-  } catch (error) {
-    console.error(`[Captions] Error fetching captions for ${videoId}:`, error);
-    return [];
+    // Try parsing as JSON (the API may return JSON with caption data)
+    let segments: YouTubeCaptionSegment[] = [];
+
+    if (contentType.includes('application/json') || body.trimStart().startsWith('{') || body.trimStart().startsWith('[')) {
+      try {
+        const json = JSON.parse(body);
+        console.log(`[Captions] Fallback parsed as JSON, keys=${Object.keys(json).join(',')} for ${videoId}`);
+
+        // Handle various JSON response shapes
+        const items = json.subtitles || json.captions || json.events || json.items || json;
+        if (Array.isArray(items)) {
+          segments = items
+            .filter((item: any) => item.text || item.utf8)
+            .map((item: any) => ({
+              start: (item.start ?? item.tStartMs ?? item.offset ?? 0) / (item.start !== undefined ? 1 : 1000),
+              duration: (item.duration ?? item.dDurationMs ?? item.dur ?? 3000) / (item.duration !== undefined ? 1 : 1000),
+              text: (item.text || item.utf8 || '').replace(/\n/g, ' ').trim(),
+            }));
+        }
+      } catch (jsonErr) {
+        console.warn(`[Captions] Fallback JSON parse failed, trying XML:`, jsonErr);
+      }
+    }
+
+    // Try parsing as XML (timedtext format)
+    if (segments.length === 0 && body.includes('<text')) {
+      console.log(`[Captions] Fallback parsing as timedtext XML for ${videoId}`);
+      segments = parseTimedTextXml(body);
+    }
+
+    // Try parsing as SRV3 XML
+    if (segments.length === 0 && body.includes('<p ')) {
+      console.log(`[Captions] Fallback parsing as SRV3 XML for ${videoId}`);
+      segments = parseSrv3Captions(body);
+    }
+
+    console.log(`[Captions] Fallback produced ${segments.length} segments for ${videoId}`);
+    return segments;
+
+  } catch (fallbackError) {
+    console.error(`[Captions] Fallback also failed for ${videoId}:`, fallbackError instanceof Error ? fallbackError.message : fallbackError);
   }
+
+  console.log(`[Captions] All caption sources exhausted for ${videoId}, returning empty`);
+  return [];
 }
 
 /**

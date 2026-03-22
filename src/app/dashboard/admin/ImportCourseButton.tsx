@@ -16,72 +16,30 @@ interface ImportResult {
 type ImportMode = 'single' | 'multi';
 
 /**
- * Fetch YouTube transcript from the browser (client-side).
- * This bypasses server IP blocks because it runs from the admin's browser.
- * Uses a CORS proxy to access YouTube's InnerTube API.
+ * Fetch captions via our own API proxy (avoids CORS issues).
+ * The server uses youtube-transcript + fallback to extract captions.
  */
-async function fetchTranscriptClientSide(videoId: string): Promise<Array<{start: number; duration: number; text: string}> | null> {
+async function fetchCaptionsViaProxy(videoId: string): Promise<Array<{start: number; duration: number; text: string}> | null> {
   try {
-    // Method 1: Use InnerTube Android API (same as youtube-transcript package)
-    const playerRes = await fetch('https://www.youtube.com/youtubei/v1/player?prettyPrint=false', {
+    const res = await fetch(`/api/admin/test-captions?videoId=${videoId}`);
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    if (!data.success || !data.sample || data.segmentsCount === 0) return null;
+
+    // test-captions only returns a sample, we need the full captions
+    // So let's call the full extraction endpoint
+    const fullRes = await fetch('/api/admin/fetch-full-captions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        context: {
-          client: {
-            clientName: 'ANDROID',
-            clientVersion: '20.10.38',
-          }
-        },
-        videoId,
-      }),
+      body: JSON.stringify({ videoId }),
     });
 
-    if (!playerRes.ok) return null;
-    const playerData = await playerRes.json();
-
-    const captionTracks = playerData?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
-    if (!captionTracks || captionTracks.length === 0) return null;
-
-    // Get first available track (prefer English)
-    let track = captionTracks.find((t: any) => t.languageCode === 'en');
-    if (!track) track = captionTracks.find((t: any) => t.languageCode?.startsWith('en'));
-    if (!track) track = captionTracks[0];
-
-    if (!track?.baseUrl) return null;
-
-    // Fetch the caption XML
-    const captionRes = await fetch(track.baseUrl);
-    if (!captionRes.ok) return null;
-
-    const xml = await captionRes.text();
-
-    // Parse XML captions
-    const segments: Array<{start: number; duration: number; text: string}> = [];
-    const regex = new RegExp('<text\\s+start="([\\d.]+)"\\s+dur="([\\d.]+)"[^>]*>(.*?)<\\/text>', 'gs');
-    let match;
-    while ((match = regex.exec(xml)) !== null) {
-      const text = match[3]
-        .replace(/<[^>]+>/g, '')
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'")
-        .replace(/\n/g, ' ')
-        .trim();
-      if (text) {
-        segments.push({
-          start: parseFloat(match[1]),
-          duration: parseFloat(match[2]),
-          text,
-        });
-      }
-    }
-
-    return segments.length > 0 ? segments : null;
+    if (!fullRes.ok) return null;
+    const fullData = await fullRes.json();
+    return fullData.captions || null;
   } catch (err) {
-    console.log('[ClientCaptions] Error:', err);
+    console.log('[ProxyCaptions] Error:', err);
     return null;
   }
 }
@@ -119,7 +77,7 @@ export default function ImportCourseButton() {
 
       try {
         // Extract captions from browser
-        const captions = await fetchTranscriptClientSide(video.videoId);
+        const captions = await fetchCaptionsViaProxy(video.videoId);
         if (!captions || captions.length === 0) {
           console.log(`[ClientCaptions] No captions found for ${video.videoId}`);
           continue;
