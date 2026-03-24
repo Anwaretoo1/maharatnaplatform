@@ -57,7 +57,6 @@ export async function translateCourseMetadata(
   const text = response.content[0].type === 'text' ? response.content[0].text : '';
 
   try {
-    // Extract JSON from response (handle possible markdown wrapping)
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('No JSON found in response');
     const parsed = JSON.parse(jsonMatch[0]);
@@ -68,7 +67,6 @@ export async function translateCourseMetadata(
       seoKeywords: parsed.seoKeywords || [],
     };
   } catch {
-    // Fallback if parsing fails
     return {
       title: originalTitle,
       description: originalDescription,
@@ -102,58 +100,149 @@ ${originalTitle}`
 }
 
 /**
- * Translate caption segments to Arabic in batches
- * Processes captions in chunks to stay within token limits
+ * Split long caption segments into subtitle-sized chunks (~8 seconds max)
+ * This ensures subtitles display properly and translation batches are manageable
+ */
+function normalizeSegments(
+  segments: { start: number; duration: number; text: string }[]
+): { start: number; duration: number; text: string }[] {
+  const MAX_DURATION = 10; // seconds per subtitle
+  const MAX_CHARS = 200;   // max chars per subtitle line
+  const result: { start: number; duration: number; text: string }[] = [];
+
+  for (const seg of segments) {
+    // If segment is short enough, keep as-is
+    if (seg.duration <= MAX_DURATION && seg.text.length <= MAX_CHARS) {
+      result.push(seg);
+      continue;
+    }
+
+    // Split long segments by sentences
+    const sentences = seg.text.split(/(?<=[.!?])\s+/);
+    if (sentences.length <= 1 && seg.text.length <= MAX_CHARS) {
+      result.push(seg);
+      continue;
+    }
+
+    // Distribute time across sentences proportionally by character count
+    const totalChars = seg.text.length;
+    let currentStart = seg.start;
+
+    let chunk = '';
+    let chunkStart = currentStart;
+
+    for (const sentence of sentences) {
+      if (chunk && (chunk.length + sentence.length > MAX_CHARS)) {
+        // Flush current chunk
+        const chunkDuration = (chunk.length / totalChars) * seg.duration;
+        result.push({ start: chunkStart, duration: chunkDuration, text: chunk.trim() });
+        currentStart = chunkStart + chunkDuration;
+        chunkStart = currentStart;
+        chunk = sentence;
+      } else {
+        chunk = chunk ? chunk + ' ' + sentence : sentence;
+      }
+    }
+
+    // Flush remaining
+    if (chunk) {
+      const remaining = seg.start + seg.duration - chunkStart;
+      result.push({ start: chunkStart, duration: Math.max(remaining, 1), text: chunk.trim() });
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Translate caption segments to Arabic in batches with concurrency
+ * - Normalizes long segments first
+ * - Uses larger batches (150 segments)
+ * - Processes 3 batches in parallel
  */
 export async function translateCaptions(
   segments: { start: number; duration: number; text: string }[]
 ): Promise<TranslatedCaption[]> {
   if (segments.length === 0) return [];
 
+  // Step 1: Normalize segments (split long ones)
+  const normalized = normalizeSegments(segments);
+  console.log(`[Translate] Normalized ${segments.length} → ${normalized.length} segments`);
+
   const client = getClient();
-  const BATCH_SIZE = 50; // Translate 50 segments at a time
-  const translatedSegments: TranslatedCaption[] = [];
+  const BATCH_SIZE = 150;     // Larger batches = fewer API calls
+  const CONCURRENCY = 3;      // Process 3 batches at a time
+  const translatedSegments: (TranslatedCaption | null)[] = new Array(normalized.length).fill(null);
 
-  for (let i = 0; i < segments.length; i += BATCH_SIZE) {
-    const batch = segments.slice(i, i + BATCH_SIZE);
-    const numberedLines = batch.map((seg, idx) => `${idx + 1}|${seg.text}`).join('\n');
+  // Create all batches
+  const batches: { startIdx: number; batch: typeof normalized }[] = [];
+  for (let i = 0; i < normalized.length; i += BATCH_SIZE) {
+    batches.push({ startIdx: i, batch: normalized.slice(i, i + BATCH_SIZE) });
+  }
 
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4096,
-      messages: [
-        {
-          role: 'user',
-          content: `ترجم الترجمات التالية (subtitles) إلى العربية. كل سطر يبدأ برقم ثم | ثم النص.
+  console.log(`[Translate] ${batches.length} batches to translate (${CONCURRENCY} concurrent)`);
+
+  // Process batches with concurrency limit
+  for (let i = 0; i < batches.length; i += CONCURRENCY) {
+    const chunk = batches.slice(i, i + CONCURRENCY);
+    console.log(`[Translate] Processing batch group ${Math.floor(i / CONCURRENCY) + 1}/${Math.ceil(batches.length / CONCURRENCY)}...`);
+
+    const promises = chunk.map(async ({ startIdx, batch }) => {
+      const numberedLines = batch.map((seg, idx) => `${idx + 1}|${seg.text}`).join('\n');
+
+      try {
+        const response = await client.messages.create({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 8192,
+          messages: [
+            {
+              role: 'user',
+              content: `ترجم الترجمات التالية (subtitles) إلى العربية. كل سطر يبدأ برقم ثم | ثم النص.
 أعد كل سطر بنفس الصيغة: الرقم|النص المترجم
 لا تضف أي شرح أو نص إضافي. حافظ على نفس الأرقام.
 
 ${numberedLines}`
+            }
+          ]
+        });
+
+        const text = response.content[0].type === 'text' ? response.content[0].text : '';
+        const lines = text.trim().split('\n');
+
+        for (let j = 0; j < batch.length; j++) {
+          const seg = batch[j];
+          const lineNum = j + 1;
+          const translatedLine = lines.find(l => l.startsWith(`${lineNum}|`));
+          const translatedText = translatedLine
+            ? translatedLine.substring(translatedLine.indexOf('|') + 1).trim()
+            : seg.text;
+
+          translatedSegments[startIdx + j] = {
+            start: seg.start,
+            duration: seg.duration,
+            text: translatedText,
+          };
         }
-      ]
+      } catch (error) {
+        console.error(`[Translate] Batch at ${startIdx} failed:`, error instanceof Error ? error.message : error);
+        // Fill with original text on failure
+        for (let j = 0; j < batch.length; j++) {
+          translatedSegments[startIdx + j] = {
+            start: batch[j].start,
+            duration: batch[j].duration,
+            text: batch[j].text,
+          };
+        }
+      }
     });
 
-    const text = response.content[0].type === 'text' ? response.content[0].text : '';
-    const lines = text.trim().split('\n');
-
-    for (let j = 0; j < batch.length; j++) {
-      const seg = batch[j];
-      // Try to find the translated line by number
-      const lineNum = j + 1;
-      const translatedLine = lines.find(l => l.startsWith(`${lineNum}|`));
-      const translatedText = translatedLine
-        ? translatedLine.substring(translatedLine.indexOf('|') + 1).trim()
-        : seg.text; // fallback to original
-
-      translatedSegments.push({
-        start: seg.start,
-        duration: seg.duration,
-        text: translatedText,
-      });
-    }
+    await Promise.all(promises);
   }
 
-  return translatedSegments;
+  // Filter out nulls (shouldn't happen but safety)
+  const result = translatedSegments.filter((s): s is TranslatedCaption => s !== null);
+  console.log(`[Translate] ✓ Translated ${result.length} segments`);
+  return result;
 }
 
 /**

@@ -132,10 +132,10 @@ async function handleYouTubeImport(url: string, category: string | undefined, us
       console.log(`[Import] Processing video ${i + 1}/${videos.length}: ${video.videoId} - ${video.title}`);
       const arabicTitle = await translateVideoTitle(video.title);
 
-      // Level 1: Try YouTube captions (existing captions/auto-generated)
+      // Level 1: Try caption extraction (Supadata → direct → youtube-transcript)
       let captions = await fetchYouTubeCaptions(video.videoId);
-      let captionSource = 'youtube';
-      console.log(`[Import] YouTube captions for ${video.videoId}: ${captions.length} segments`);
+      let captionSource = 'captions';
+      console.log(`[Import] Captions for ${video.videoId}: ${captions.length} segments`);
 
       // Level 2: If no YouTube captions, try AssemblyAI speech-to-text
       if (captions.length === 0 && process.env.ASSEMBLYAI_API_KEY) {
