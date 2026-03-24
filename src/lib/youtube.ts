@@ -242,19 +242,61 @@ export async function checkYouTubeCaptions(videoId: string): Promise<{ available
 
 /**
  * Fetch YouTube captions with multiple fallback methods:
- * 1. Direct caption URL extraction from player response (most reliable)
- * 2. youtube-transcript package
- * 3. Returns empty (AssemblyAI handles it in import-course)
+ * 1. Supadata.ai API (third-party, works from any server - MOST RELIABLE)
+ * 2. Direct caption URL from player response
+ * 3. youtube-transcript package
+ * 4. Returns empty (AssemblyAI handles it in import-course)
  */
 export async function fetchYouTubeCaptions(videoId: string, lang: string = 'en'): Promise<YouTubeCaptionSegment[]> {
   console.log(`[Captions] Starting caption fetch for videoId=${videoId}, lang=${lang}`);
 
-  // --- Attempt 1: Direct caption URL from player response ---
+  // --- Attempt 1: Supadata.ai API (works from any server, bypasses YouTube blocks) ---
+  const supadataKey = process.env.SUPADATA_API_KEY;
+  if (supadataKey) {
+    try {
+      console.log(`[Captions] Attempt 1: Supadata.ai API for ${videoId}`);
+      const supadataUrl = `https://api.supadata.ai/v1/youtube/transcript?videoId=${videoId}&lang=${lang}`;
+      const res = await fetch(supadataUrl, {
+        headers: { 'x-api-key': supadataKey },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const content = data?.content || data?.transcript || data;
+
+        if (Array.isArray(content) && content.length > 0) {
+          const segments = content
+            .filter((item: any) => item.text)
+            .map((item: any) => ({
+              start: (item.offset ?? item.start ?? 0) / 1000,
+              duration: (item.duration ?? item.dur ?? 3000) / 1000,
+              text: (item.text || '').replace(/\n/g, ' ').trim(),
+            }));
+
+          if (segments.length > 0) {
+            console.log(`[Captions] ✓ Supadata returned ${segments.length} segments for ${videoId}`);
+            return segments;
+          }
+        }
+
+        console.log(`[Captions] Supadata returned empty for ${videoId}:`, JSON.stringify(data).substring(0, 200));
+      } else {
+        const errText = await res.text().catch(() => '');
+        console.error(`[Captions] Supadata HTTP ${res.status} for ${videoId}: ${errText.substring(0, 200)}`);
+      }
+    } catch (error) {
+      console.error(`[Captions] Supadata failed for ${videoId}:`, error instanceof Error ? error.message : error);
+    }
+  } else {
+    console.log(`[Captions] Supadata API key not set, skipping`);
+  }
+
+  // --- Attempt 2: Direct caption URL from player response ---
   try {
-    console.log(`[Captions] Attempt 1: Direct caption URL extraction for ${videoId}`);
+    console.log(`[Captions] Attempt 2: Direct caption URL extraction for ${videoId}`);
     const segments = await fetchCaptionsFromPlayerResponse(videoId, lang);
     if (segments.length > 0) {
-      console.log(`[Captions] Direct extraction succeeded: ${segments.length} segments for ${videoId}`);
+      console.log(`[Captions] ✓ Direct extraction: ${segments.length} segments for ${videoId}`);
       return segments;
     }
     console.log(`[Captions] Direct extraction returned 0 segments for ${videoId}`);
@@ -262,9 +304,9 @@ export async function fetchYouTubeCaptions(videoId: string, lang: string = 'en')
     console.error(`[Captions] Direct extraction failed for ${videoId}:`, error instanceof Error ? error.message : error);
   }
 
-  // --- Attempt 2: youtube-transcript package ---
+  // --- Attempt 3: youtube-transcript package ---
   try {
-    console.log(`[Captions] Attempt 2: youtube-transcript package (lang=${lang})`);
+    console.log(`[Captions] Attempt 3: youtube-transcript package (lang=${lang})`);
 
     let transcript;
     try {
@@ -274,7 +316,7 @@ export async function fetchYouTubeCaptions(videoId: string, lang: string = 'en')
     }
 
     if (transcript && transcript.length > 0) {
-      console.log(`[Captions] youtube-transcript: ${transcript.length} segments for ${videoId}`);
+      console.log(`[Captions] ✓ youtube-transcript: ${transcript.length} segments for ${videoId}`);
       return transcript.map(seg => ({
         start: (seg.offset || 0) / 1000,
         duration: (seg.duration || 3000) / 1000,
@@ -285,7 +327,7 @@ export async function fetchYouTubeCaptions(videoId: string, lang: string = 'en')
     console.error(`[Captions] youtube-transcript failed for ${videoId}:`, error instanceof Error ? error.message : error);
   }
 
-  console.log(`[Captions] All caption sources exhausted for ${videoId}, returning empty`);
+  console.log(`[Captions] ✗ All caption sources exhausted for ${videoId}`);
   return [];
 }
 
