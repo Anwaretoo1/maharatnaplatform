@@ -11,7 +11,7 @@ const nextConfig: NextConfig = {
     ],
   },
   // Ensure Prisma Client works correctly in serverless
-  serverExternalPackages: ['@prisma/client', 'bcryptjs', 'assemblyai', 'youtube-transcript'],
+  serverExternalPackages: ['@prisma/client', 'bcryptjs', 'assemblyai'],
 };
 
 export default nextConfig;
